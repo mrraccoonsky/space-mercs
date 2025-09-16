@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4ab9ac9a19d4897aed165cbd0e68ca0, type: 3}
+  m_Name: '[Player] Rifle'
+  m_EditorClassIdentifier: Assembly-CSharp::Data.Actor.ActorConfig
+  speed: 3
+  jumpHeight: 1.5
+  jumpDelay: 0.1
+  jumpCooldown: 0.1
+  velocityDecrement: 10
+  gravityMultiplier: 1
+  fallMultiplier: 2.5
+  lowJumpMultiplier: 2
+  defaultTargetDistance: 1
+  targetMoveSpeed: 10
+  rotationSpeed: 500
+  rotationSmoothTime: 0.05
+  aimTowardsAttackDirection: 0
+  attackCooldown: 0.8
+  holdBurstTransform: 0
+  burstCount: 2
+  burstCooldown: 0.2
+  scatterAngle: 0
+  scatterType: 0
+  projectilePrefab: {fileID: 8346639860500835342, guid: 8aa46c1d1b7dd114685432a73ad06eba, type: 3}
+  projectileCount: 3
+  projectileCooldown: 0.05
+  projectileLifetime: 0.35
+  projectileSpeed: 20
+  projectilePenetrationCount: 0
+  canHitOnCooldown: 0
+  maxHealth: 50
+  hitCooldown: 0.5

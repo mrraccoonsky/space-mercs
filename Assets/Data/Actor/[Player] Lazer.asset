@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4ab9ac9a19d4897aed165cbd0e68ca0, type: 3}
+  m_Name: '[Player] Lazer'
+  m_EditorClassIdentifier: Assembly-CSharp::Data.Actor.ActorConfig
+  speed: 3
+  jumpHeight: 1.5
+  jumpDelay: 0.1
+  jumpCooldown: 0.1
+  velocityDecrement: 10
+  gravityMultiplier: 1
+  fallMultiplier: 2.5
+  lowJumpMultiplier: 2
+  defaultTargetDistance: 1
+  targetMoveSpeed: 50
+  rotationSpeed: 10
+  rotationSmoothTime: 0.1
+  aimTowardsAttackDirection: 0
+  attackCooldown: 0.8
+  holdBurstTransform: 1
+  burstCount: 1
+  burstCooldown: 0.1
+  scatterAngle: 0
+  scatterType: 0
+  projectilePrefab: {fileID: 8346639860500835342, guid: e335959515330b446a260f1be62b5000, type: 3}
+  projectileCount: 20
+  projectileCooldown: 0.01
+  projectileLifetime: 0.6
+  projectileSpeed: 15
+  projectilePenetrationCount: 1
+  canHitOnCooldown: 0
+  maxHealth: 50
+  hitCooldown: 0.5

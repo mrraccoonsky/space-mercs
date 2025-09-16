@@ -1,0 +1,15 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f14086ba5004444a9cba2ad9414e118e, type: 3}
+  m_Name: Default Global Variables Config
+  m_EditorClassIdentifier: Assembly-CSharp::Data.GlobalVariablesConfig
+  tagConfig: {fileID: 11400000, guid: 45b5e681b5e8f96449184826fb7dc113, type: 2}

@@ -1,8 +1,10 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using ECS.AI.States;
 using ECS.Components;
 using ECS.Utils;
+using Tools;
 
 namespace ECS.Systems
 {
@@ -36,11 +38,11 @@ namespace ECS.Systems
                 if (!EcsUtils.HasCompInPool<InputComponent>(_world, entity, out var inputPool))
                 {
                     inputPool.Add(entity);
-                    Debug.Log($"[AIDecisionSystem] Added input component to entity {entity}");
+                    DebCon.Log($"Added input component to entity {entity}", "AIDecisionSystem");
                 }
             }
-                
-            Debug.Log($"[AIDecisionSystem] Initialized with {_aiFilter.GetEntitiesCount()} AI entities");
+            
+            DebCon.Log($"Initialized with {_aiFilter.GetEntitiesCount()} AI entities", "AIDecisionSystem");
             
             // init state machines for each AI entity
             foreach (var entity in _aiFilter)
@@ -77,7 +79,7 @@ namespace ECS.Systems
                 
                 if (!_stateMachines.TryGetValue(entity, out var stateMachine))
                 {
-                    Debug.LogWarning($"[AIDecisionSystem] No state machine found for entity {entity}");
+                    DebCon.Warn($"No state machine found for entity {entity}", "AIDecisionSystem");
                     continue;
                 }
                 

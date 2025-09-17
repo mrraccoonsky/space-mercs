@@ -2,6 +2,7 @@
 using Data.Actor;
 using ECS.Components;
 using ECS.Utils;
+using Tools;
 
 namespace Actor.Modules
 {
@@ -76,7 +77,6 @@ namespace Actor.Modules
             healthPool.Add(entityId);
             
             SyncEcsState();
-            // Debug.Log("[Health Module] Init done!", gameObject);
         }
 
         public void SyncEcsState()
@@ -118,13 +118,13 @@ namespace Actor.Modules
                 PlayHitFx();
                 
                 _currentHealth += _accumHealthChange;
-                Debug.Log(gameObject.name + " got HIT for " + _accumHealthChange + ", current hp: " + _currentHealth);
+                DebCon.Info(gameObject.name + " got HIT for " + _accumHealthChange + ", current hp: " + _currentHealth, "AHealth", gameObject);
             }
             
             if (_accumHealthChange > 0f)
             {
                 _currentHealth += _accumHealthChange;
-                Debug.Log(gameObject.name + " got HEALED for " + _accumHealthChange + ", current hp: " + _currentHealth);
+                DebCon.Info(gameObject.name + " got HEALED for " + _accumHealthChange + ", current hp: " + _currentHealth, "AHealth", gameObject);
             }
 
             _currentHealth = Mathf.Clamp(_currentHealth, 0f, maxHealth);

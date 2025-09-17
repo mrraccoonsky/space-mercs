@@ -102,7 +102,7 @@ namespace ECS.Bridges
             }
         }
 
-        public bool ShouldBeDestroyed()
+        public bool CheckNeedsDestroy()
         {
             return _lifeTimer >= lifetime || _penetrationCount > penetrationCount;
         }

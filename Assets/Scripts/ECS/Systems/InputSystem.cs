@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using DI.Services;
 using ECS.Components;
+using Tools;
 
 namespace ECS.Systems
 {
@@ -39,7 +40,7 @@ namespace ECS.Systems
                 if (!inputPool.Has(entityId))
                 {
                     inputPool.Add(entityId);
-                    Debug.Log($"[InputSystem] Added input component to entity {entityId}");
+                    DebCon.Log($"Added input component to entity {entityId}", "InputSystem");
                 }
             }
         }

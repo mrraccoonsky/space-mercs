@@ -2,6 +2,7 @@
 using Data.Actor;
 using ECS.Components;
 using ECS.Utils;
+using Tools;
 
 namespace Actor.Modules
 {
@@ -58,7 +59,7 @@ namespace Actor.Modules
                 var component = GetComponentInChildren<Animator>();
                 if (component == null)
                 {
-                    Debug.LogWarning("[Animation Module] Animator component not found!", gameObject);
+                    DebCon.Err($"Animator not found on {gameObject.name}!", "AAnimator", gameObject);
                     return;
                 }
                 
@@ -66,7 +67,6 @@ namespace Actor.Modules
             }
             
             _t = transform;
-            // Debug.Log("[Animation Module] Init done!", gameObject);
         }
         
         public void SyncEcsState()

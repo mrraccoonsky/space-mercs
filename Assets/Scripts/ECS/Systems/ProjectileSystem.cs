@@ -16,7 +16,7 @@ namespace ECS.Systems
         private readonly EcsPool<ProjectileComponent> _projectilePool;
         private readonly EcsPool<HealthComponent> _healthPool;
         
-        private readonly EcsFilter _healthFilter;
+        private readonly EcsFilter _targetFilter;
         private readonly int _obstacleLayer;
 
         private readonly List<int> _entitiesToDestroy = new();
@@ -28,7 +28,7 @@ namespace ECS.Systems
             _projectilePool = _world.GetPool<ProjectileComponent>();
             
             _healthPool = _world.GetPool<HealthComponent>();
-            _healthFilter = _world.Filter<HealthComponent>().End();
+            _targetFilter = _world.Filter<HealthComponent>().End();
             
             _obstacleLayer = LayerMask.GetMask("Obstacle");
         }
@@ -44,7 +44,7 @@ namespace ECS.Systems
                 var t = bridge.transform;
 
                 if (bridge == null) continue;
-                if (bridge.ShouldBeDestroyed())
+                if (bridge.CheckNeedsDestroy())
                 {
                     DestroyProjectile(bridge, e);
                     continue;
@@ -55,7 +55,7 @@ namespace ECS.Systems
                 if (bridge.Hitbox == null) continue;
                 var bounds = bridge.Hitbox.bounds;
                 
-                foreach (var targetEntity in _healthFilter)
+                foreach (var targetEntity in _targetFilter)
                 {
                     if (aProjectile.HitEntities.Contains(targetEntity)) continue;
                     
@@ -68,7 +68,7 @@ namespace ECS.Systems
                     {
                         aHealth.Module.RegisterHitData(t.position, t.eulerAngles);
                         aHealth.Module.ChangeHealth(-10f); // todo: make it configurable
-                    
+                        
                         bridge.RegisterHit();
                         aProjectile.HitEntities.Add(targetEntity);
                         break;

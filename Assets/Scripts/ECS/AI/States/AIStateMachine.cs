@@ -2,6 +2,7 @@
 using UnityEngine;
 using ECS.Components;
 using ECS.Utils;
+using Tools;
 
 namespace ECS.AI.States
 {
@@ -20,6 +21,16 @@ namespace ECS.AI.States
         }
         
         public AIBehaviorState CurrentStateType => _currentStateType;
+        
+        private static string GetStateColor(AIBehaviorState state)
+        {
+            var hash = state.ToString().GetHashCode();
+            var r = (byte)System.Math.Max(127, System.Math.Abs(hash % 256));
+            var g = (byte)System.Math.Max(127, System.Math.Abs((hash >> 8) % 256));
+            var b = (byte)System.Math.Max(127, System.Math.Abs((hash >> 16) % 256));
+            
+            return $"{r:X2}{g:X2}{b:X2}FF";
+        }
         
         public void RegisterState(AIBehaviorState stateType, IAIState state)
         {
@@ -47,18 +58,22 @@ namespace ECS.AI.States
         {
             if (!_states.ContainsKey(newState))
             {
-                Debug.LogError($"[AIStateMachine] State {newState} not registered!");
+                DebCon.Err($"State {newState} not registered on entity {context.EntityId}!", "AIStateMachine");
                 return;
             }
 
             if (!force && IsInState(newState))
             {
-                // Debug.Log($"[AIStateMachine] Entity {context.EntityId} is already in state {newState}");
+                // DebCon.Log($"Entity {context.EntityId} is already in state {newState}", "AIStateMachine");
                 return;
             }
 
             _currentState?.Exit();
-            Debug.Log($"[AIStateMachine] Entity {context.EntityId} transitioning from {_currentStateType} to {newState}");
+            
+            // Format the state names as colored text using string interpolation
+            var fromState = $"<color=#{GetStateColor(_currentStateType)}>{_currentStateType}</color>";
+            var toState = $"<color=#{GetStateColor(newState)}>{newState}</color>";
+            DebCon.Log($"Entity {context.EntityId} transitioning from {fromState} to {toState}...", "AIStateMachine");
             
             _currentStateType = newState;
             _currentState = _states[newState];

@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using ECS.Components;
+using Tools;
 
 namespace ECS.AI.States
 {
@@ -12,7 +13,7 @@ namespace ECS.AI.States
         public override void Enter()
         {
             base.Enter();
-            // Debug.Log($"[IdleState] Entity {_context.EntityId} entered Dead state;
+            // DebCon.Log($"Entity {Context.EntityId} entered Dead state", "DeadState");
         }
         
         public override void Update(float dt)

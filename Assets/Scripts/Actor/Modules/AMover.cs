@@ -2,6 +2,7 @@
 using UnityEngine;
 using ECS.Components;
 using ECS.Utils;
+using Tools;
 
 namespace Actor.Modules
 {
@@ -76,7 +77,7 @@ namespace Actor.Modules
             
             if (_controller == null)
             {
-                Debug.LogWarning("[Movement Module] Character controller not found!", gameObject);
+                DebCon.Err($"Character controller not found on {gameObject.name}!", "AMover", gameObject);
             }
 
             // init config
@@ -99,7 +100,6 @@ namespace Actor.Modules
             movementPool.Add(entityId);
             
             SyncEcsState();
-            // Debug.Log("[Movement Module] Init done!", gameObject);
         }
 
         public void SyncEcsState()
@@ -130,7 +130,7 @@ namespace Actor.Modules
             var inputPool = World.GetPool<InputComponent>();
             if (!inputPool.Has(EntityId))
             {
-                Debug.LogWarning("[Movement Module] Input component not found!", gameObject);
+                DebCon.Err($"Input component not found on {gameObject.name}!", "AMover",gameObject);
                 return;
             }
             

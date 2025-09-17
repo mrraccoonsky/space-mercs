@@ -3,6 +3,7 @@ using UnityEngine.AI;
 using Data.AI;
 using ECS.Components;
 using ECS.Utils;
+using Tools;
 
 namespace ECS.Bridges
 {
@@ -95,7 +96,7 @@ namespace ECS.Bridges
             if (!EcsUtils.HasCompInPool<AIControlledComponent>(world, entityId, out var aiPool))
             {
                 aiPool.Add(entityId);
-                Debug.Log($"[AICharacterMarker] '{gameObject.name}' marked as AI-controlled");
+                DebCon.Log($"'{gameObject.name}' marked as AI-controlled", "AIActorBridge", gameObject);
                 
                 ref var aiControlled = ref aiPool.Get(entityId);
                 aiControlled.Bridge = this;

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4ab9ac9a19d4897aed165cbd0e68ca0, type: 3}
   m_Name: '[Player] Burner'
   m_EditorClassIdentifier: Assembly-CSharp::Data.Actor.ActorConfig
-  speed: 3
+  speed: 2.5
   jumpHeight: 1.5
   jumpDelay: 0.1
   jumpCooldown: 0.1
@@ -32,10 +32,10 @@ MonoBehaviour:
   scatterAngle: 0
   scatterType: 0
   projectilePrefab: {fileID: 8346639860500835342, guid: f78f30cf4702eb04c9497ecf3912edf6, type: 3}
-  projectileCount: 40
-  projectileCooldown: 0.02
+  projectileCount: 20
+  projectileCooldown: 0.04
   projectileLifetime: 0.7
-  projectileSpeed: 10
+  projectileSpeed: 8
   projectilePenetrationCount: 0
   canHitOnCooldown: 1
   maxHealth: 50

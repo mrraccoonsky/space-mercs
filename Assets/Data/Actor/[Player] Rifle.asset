@@ -21,9 +21,9 @@ MonoBehaviour:
   fallMultiplier: 2.5
   lowJumpMultiplier: 2
   defaultTargetDistance: 1
-  targetMoveSpeed: 10
-  rotationSpeed: 500
-  rotationSmoothTime: 0.05
+  targetMoveSpeed: 50
+  rotationSpeed: 12
+  rotationSmoothTime: 0.1
   aimTowardsAttackDirection: 0
   attackCooldown: 0.8
   holdBurstTransform: 0

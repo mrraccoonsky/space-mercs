@@ -3,6 +3,7 @@ using Actor.Modules;
 using Data;
 using Data.Actor;
 using ECS.Components;
+using Tools;
 
 namespace ECS.Bridges
 {
@@ -66,7 +67,7 @@ namespace ECS.Bridges
             }
             
             SyncEcsState();
-            Debug.Log($"[CharacterBridge] {name}:{EntityId} Init done!", gameObject);
+            DebCon.Log($"{name}:{EntityId} Init done!", "ActorBridge", gameObject);
         }
 
         public void Tick(float dt)

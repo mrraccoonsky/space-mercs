@@ -4,6 +4,7 @@ using ECS.Bridges;
 using ECS.Components;
 using ECS.Utils;
 using Factories;
+using Tools;
 
 namespace Actor.Modules
 {
@@ -49,9 +50,6 @@ namespace Actor.Modules
         [Space]
         [SerializeField] private Transform originsRoot;
         [SerializeField] private OriginCycleMode cycleMode = OriginCycleMode.None;
-
-        [Header("Visuals:")]
-        [SerializeField] private ParticleSystem hitFxPrefab;
         
         private Transform[] _origins;
         private int _currentOriginIndex;
@@ -118,7 +116,6 @@ namespace Actor.Modules
             attackPool.Add(entityId);
             
             SyncEcsState();
-            // Debug.Log("[Attacking Module] Init done!", gameObject);
         }
         
         public void SyncEcsState()
@@ -136,7 +133,7 @@ namespace Actor.Modules
 
             if (!EcsUtils.HasCompInPool<InputComponent>(World, EntityId, out var inputPool))
             {
-                Debug.LogWarning("-[Attacking Module] Input component not found!", gameObject);
+                DebCon.Err($"Input component not found on {gameObject.name}!", "AAttacker", gameObject);
                 return;
             }
             
@@ -324,7 +321,7 @@ namespace Actor.Modules
         {
             if (projectilePrefab == null)
             {
-                Debug.LogWarning("[Attacking Module] Projectile prefab not set!", gameObject);
+                DebCon.Warn("Projectile prefab not set!", "AAttacker", gameObject);
                 return;
             }
             

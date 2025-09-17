@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using UnityEngine;
 using UnityEngine.Animations;
 using Data.Actor;
 using ECS.Components;
 using ECS.Utils;
+using Tools;
 
 namespace Actor.Modules
 {
@@ -77,7 +78,6 @@ namespace Actor.Modules
             aimPool.Add(EntityId);
             
             SyncEcsState();
-            // Debug.Log("[Aiming Module] Init done!", gameObject);
         }
 
         public void SyncEcsState()
@@ -106,7 +106,7 @@ namespace Actor.Modules
 
             if (!EcsUtils.HasCompInPool<InputComponent>(World, EntityId, out var inputPool))
             {
-                Debug.LogWarning("-[Aiming Module] Input component not found!", gameObject);
+                DebCon.Err($"Input component not found on {gameObject.name}!", "AAimer", gameObject);
                 return;
             }
 
@@ -210,7 +210,7 @@ namespace Actor.Modules
             if (root == null)
             {
                 root = new GameObject(RootName);
-                // Debug.Log("[Aiming Module] Root created!");
+                // DebCon.Log("Root created!", "AAimer", gameObject);
             }
             
             _targetOrigin = new GameObject($"targetOrigin_{name}").transform;
@@ -231,6 +231,13 @@ namespace Actor.Modules
             if (canAim && (aimTowardsAttackDirection && (aInput.IsAttackHeld || isAttacking) || aInput.IsAimHeld))
             {
                 targetWorldPos = aInput.AimPosition;
+                
+                // slightly adjust the target origin for camera-related aiming
+                if (mainCamera != null)
+                {
+                    // todo: make this configurable / based on certain camera settings
+                    targetWorldPos -= mainCamera.transform.forward * 1.2f;
+                }
                 
                 // clamp the target position to ensure it doesn't go through the character
                 var targetDir = targetWorldPos - _t.position;

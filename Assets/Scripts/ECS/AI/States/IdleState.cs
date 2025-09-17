@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using ECS.Components;
+using Tools;
 using Random = UnityEngine.Random;
 
 namespace ECS.AI.States
@@ -26,7 +27,7 @@ namespace ECS.AI.States
             
             if (aBehavior.StateTimer > _transitionTime)
             {
-                Debug.Log($"[IdleState] Entity {Context.EntityId} transitioning to Patrol state after {aBehavior.StateTimer:F1}s (threshold: {_transitionTime:F1}s)");
+                // DebCon.Info($"Entity {Context.EntityId} transitioning to PATROL state after {aBehavior.StateTimer:F1}s (threshold: {_transitionTime:F1}s)");
                 SwitchState(AIBehaviorState.Patrol);
             }
         }

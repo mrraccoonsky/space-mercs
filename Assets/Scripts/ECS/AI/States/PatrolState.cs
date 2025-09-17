@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using ECS.Components;
+using Tools;
 
 namespace ECS.AI.States
 {
@@ -29,7 +30,7 @@ namespace ECS.AI.States
             if (_targetPos == Vector3.zero)
             {
                 FindPatrolTarget(ref aBehavior);
-                Debug.Log($"[PatrolState] Entity {Context.EntityId} set patrol target to {_targetPos}");
+                DebCon.Log($"Entity {Context.EntityId} set patrol target to {_targetPos}", "PatrolState");
             }
             else
             {
@@ -39,7 +40,7 @@ namespace ECS.AI.States
                     
                     if (_cooldownTimer > 1f)
                     {
-                        Debug.Log($"[PatrolState] Entity {Context.EntityId} has reached patrol target!");
+                        DebCon.Log($"Entity {Context.EntityId} has reached patrol target!", "PatrolState");
                         SwitchState(AIBehaviorState.Idle);
                         return;
                     }

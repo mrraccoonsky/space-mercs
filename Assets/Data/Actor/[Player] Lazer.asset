@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4ab9ac9a19d4897aed165cbd0e68ca0, type: 3}
   m_Name: '[Player] Lazer'
   m_EditorClassIdentifier: Assembly-CSharp::Data.Actor.ActorConfig
-  speed: 3
+  speed: 2.5
   jumpHeight: 1.5
   jumpDelay: 0.1
   jumpCooldown: 0.1

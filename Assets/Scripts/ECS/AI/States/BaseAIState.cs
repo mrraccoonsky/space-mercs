@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using ECS.Components;
+using Tools;
 
 namespace ECS.AI.States
 {
@@ -16,7 +17,7 @@ namespace ECS.AI.States
         {
             if (Context.World == null)
             {
-                Debug.LogError($"[BaseAIState] Entity {Context.EntityId} has no World reference!");
+                DebCon.Err($"Entity {Context.EntityId} has no World reference!", "BaseAIState");
                 return;
             }
         }
@@ -25,7 +26,7 @@ namespace ECS.AI.States
         {
             if (Context.World == null)
             {
-                // Debug.LogError($"[BaseAIState] Entity {Context.EntityId} has no World reference!");
+                // DebCon.Err($"Entity {Context.EntityId} has no World reference!", "BaseAIState");
                 return;
             }
         }
@@ -34,7 +35,7 @@ namespace ECS.AI.States
         {
             if (Context.World == null)
             {
-                Debug.LogError($"[BaseAIState] Entity {Context.EntityId} has no World reference!");
+                DebCon.Err($"Entity {Context.EntityId} has no World reference!", "BaseAIState");
                 return;
             }
         }
@@ -56,7 +57,7 @@ namespace ECS.AI.States
             
             if (Context.World == null)
             {
-                // Debug.LogError($"[BaseAIState] Entity {Context.EntityId} has no World reference!");
+                // DebCon.Err($"Entity {Context.EntityId} has no World reference!", "BaseAIState");
                 return;
             }
         }

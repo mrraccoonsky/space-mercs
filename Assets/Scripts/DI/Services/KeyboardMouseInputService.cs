@@ -1,10 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using DI.Services;
 
-namespace Input
+namespace DI.Services
 {
-    public class KeyboardMouseInput : IInputService
+    public class KeyboardMouseInputService : IInputService
     {
         private Camera MainCamera { get; set; }
         

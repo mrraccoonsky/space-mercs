@@ -11,24 +11,25 @@ namespace ECS.Systems
     {
         private readonly EcsWorld _world;
         private readonly IInputService _inputService;
-        private readonly EcsFilter _playerFilter;
         
+        private EcsFilter _playerFilter;
         private static LayerMask _raycastLayerMask;
 
         public InputSystem(EcsWorld world, IInputService inputService)
         {
             _world = world;
             _inputService = inputService;
-            
-            _playerFilter = _world.Filter<InputComponent>()
-                .Exc<AIControlledComponent>()
-                .End();
-
-            _raycastLayerMask = LayerMask.GetMask("Ground");
         }
         
         public void Init(IEcsSystems systems)
         {
+            _playerFilter = _world.Filter<InputComponent>()
+                .Exc<AIControlledComponent>()
+                .End();
+
+            // todo: it shouldn't be here
+            _raycastLayerMask = LayerMask.GetMask("Ground");
+            
             var actorPool = _world.GetPool<ActorComponent>();
             var inputPool = _world.GetPool<InputComponent>();
             
@@ -78,17 +79,11 @@ namespace ECS.Systems
             input.IsAttackHit = inputService.IsAttackHit;
             input.IsAttackHeld = inputService.IsAttackHeld;
             input.IsAttackReleased = inputService.IsAttackReleased;
-
-            input.CursorPosition = inputService.CursorPosition;
-            input.CursorDelta = inputService.CursorDelta;
             
-            input.IsRotatingCamera = inputService.IsRotatingCamera;
-            
+            // todo: it shouldn't be done in system
             if (input.MainCamera)
             {
                 var ray = input.MainCamera.ScreenPointToRay(inputService.CursorPosition);
-                
-                // todo: exclude hitbox layer
                 Physics.Raycast(ray, out var hitInfo, 100f, _raycastLayerMask);
                 input.AimPosition = hitInfo.point;
             }

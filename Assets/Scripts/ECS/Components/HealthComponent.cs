@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using Actor.Modules;
+using Actor;
 
 namespace ECS.Components
 {

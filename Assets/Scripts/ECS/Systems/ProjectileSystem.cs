@@ -1,8 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
+using DI.Services;
 using ECS.Bridges;
 using ECS.Components;
-using Factories;
 
 namespace ECS.Systems
 {
@@ -11,26 +11,26 @@ namespace ECS.Systems
     public class ProjectileSystem : IEcsRunSystem
     {
         private readonly EcsWorld _world;
-        private readonly EcsFilter _projectilesFilter;
+        private readonly IProjectileService _projectileService;
         
         private readonly EcsPool<ProjectileComponent> _projectilePool;
-        private readonly EcsPool<HealthComponent> _healthPool;
+        private readonly EcsFilter _projectilesFilter;
         
+        private readonly EcsPool<HealthComponent> _healthPool;
         private readonly EcsFilter _targetFilter;
-        private readonly int _obstacleLayer;
-
+        
         private readonly List<int> _entitiesToDestroy = new();
         
-        public ProjectileSystem(EcsWorld world)
+        public ProjectileSystem(EcsWorld world, IProjectileService projectileService)
         {
             _world = world;
+            _projectileService = projectileService;
+            
             _projectilesFilter = _world.Filter<ProjectileComponent>().End();
             _projectilePool = _world.GetPool<ProjectileComponent>();
             
             _healthPool = _world.GetPool<HealthComponent>();
             _targetFilter = _world.Filter<HealthComponent>().End();
-            
-            _obstacleLayer = LayerMask.GetMask("Obstacle");
         }
         
         public void Run(IEcsSystems systems)
@@ -41,7 +41,6 @@ namespace ECS.Systems
             {
                 ref var aProjectile = ref _projectilePool.Get(e);
                 var bridge = aProjectile.Bridge;
-                var t = bridge.transform;
 
                 if (bridge == null) continue;
                 if (bridge.CheckNeedsDestroy())
@@ -53,6 +52,8 @@ namespace ECS.Systems
                 bridge.Tick(Time.deltaTime);
                 
                 if (bridge.Hitbox == null) continue;
+                
+                var t = bridge.transform;
                 var bounds = bridge.Hitbox.bounds;
                 
                 foreach (var targetEntity in _targetFilter)
@@ -76,12 +77,12 @@ namespace ECS.Systems
                 }
 
                 if (_entitiesToDestroy.Contains(e)) continue;
-                
-                var ray = new Ray(t.position - t.forward, t.forward);
-                if (!Physics.Raycast(ray, 1f, _obstacleLayer)) continue;
-                
-                bridge.RegisterHit();
-                DestroyProjectile(bridge, e);
+
+                if (bridge.CheckCollisionWithObstacles())
+                {
+                    bridge.RegisterHit();
+                    DestroyProjectile(bridge, e);
+                }
             }
             
             foreach (var entity in _entitiesToDestroy)
@@ -92,7 +93,8 @@ namespace ECS.Systems
         
         private void DestroyProjectile(ProjectileBridge bridge, int entityId)
         {
-            ProjectileFactory.ReturnToPool(bridge);
+            bridge.gameObject.SetActive(false);
+            _projectileService.Destroy(entityId);
             _entitiesToDestroy.Add(entityId);
         }
     }

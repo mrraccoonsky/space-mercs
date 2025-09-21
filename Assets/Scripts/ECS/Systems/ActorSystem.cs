@@ -19,6 +19,7 @@ namespace ECS.Systems
             _actorsFilter = _world.Filter<ActorComponent>().End();
             _aiControlledFilter = _world.Filter<AIControlledComponent>().End();
             
+            // todo: it shouldn't be done here
             var bridges = Object.FindObjectsByType<ActorBridge>(FindObjectsSortMode.None);
             foreach (var bridge in bridges)
             {

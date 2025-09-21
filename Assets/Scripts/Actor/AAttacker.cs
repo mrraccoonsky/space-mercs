@@ -1,14 +1,15 @@
 ﻿using UnityEngine;
 using Data.Actor;
-using ECS.Bridges;
+using Data.Projectile;
+using DI.Services;
 using ECS.Components;
 using ECS.Utils;
-using Factories;
 using Tools;
 
-namespace Actor.Modules
+namespace Actor
 {
     using Leopotam.EcsLite;
+    using Zenject;
     
     public enum OriginCycleMode
     {
@@ -39,7 +40,7 @@ namespace Actor.Modules
         [SerializeField] private ScatterType scatterType = ScatterType.None;
         
         [Space]
-        [SerializeField] private ProjectileBridge projectilePrefab;
+        [SerializeField] private GameObject projectilePrefab;
         [SerializeField] private int projectileCount = 3;
         [SerializeField] private float projectileCooldown = 0.05f;
         [SerializeField] private float projectileLifetime = 0.5f;
@@ -73,6 +74,8 @@ namespace Actor.Modules
         public bool IsEnabled { get; private set; }
         public int EntityId { get; private set; }
         public EcsWorld World { get; private set; }
+        
+        [Inject] private IProjectileService _projectileService;
         
         public void Init(ActorConfig cfg, int entityId, EcsWorld world)
         {
@@ -319,31 +322,16 @@ namespace Actor.Modules
         
         private void SpawnProjectile(Transform origin)
         {
-            if (projectilePrefab == null)
-            {
-                DebCon.Warn("Projectile prefab not set!", "AAttacker", gameObject);
-                return;
-            }
-            
-            var initialVelocity = Vector3.zero;
-            if (EcsUtils.HasCompInPool<MovementComponent>(World, EntityId, out var movementPool))
-            {
-                var aMovement = movementPool.Get(EntityId);
-                initialVelocity = aMovement.Velocity;
-            }
-            
             var data = new ProjectileData(
-                prefab: projectilePrefab.gameObject,
-                tag: gameObject.tag, // pass tag to avoid friendly fire
-                position: origin.position,
-                rotation: Quaternion.Euler(origin.eulerAngles + Vector3.up * _scatterAngle),
-                initialVelocity: initialVelocity,
+                prefab: projectilePrefab,
+                tag: gameObject.tag,
                 speed: projectileSpeed,
                 lifetime: projectileLifetime,
                 penetrationCount: projectilePenetrationCount,
                 canHitOnCooldown: canHitOnCooldown);
-            
-            ProjectileFactory.Create(World, data);
+
+            var rotation = Quaternion.Euler(origin.eulerAngles + Vector3.up * _scatterAngle);
+            _projectileService.Spawn(data, origin.position, rotation);
         }
     }
 }

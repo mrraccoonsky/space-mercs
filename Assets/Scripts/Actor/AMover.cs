@@ -1,16 +1,16 @@
-﻿using Data.Actor;
-using UnityEngine;
+﻿using UnityEngine;
+using Data.Actor;
 using ECS.Components;
 using ECS.Utils;
 using Tools;
 
-namespace Actor.Modules
+namespace Actor
 {
     using Leopotam.EcsLite;
     
     public class AMover : MonoBehaviour, IActorModule
     {
-        [SerializeField] private Transform _tVisuals;
+        [SerializeField] private Transform tVisuals;
         
         [Header("Movement:")]
         [SerializeField] private float speed = 5f;
@@ -294,7 +294,7 @@ namespace Actor.Modules
         
         private void AlignToGround(Vector3 avgNormal, int hitCount, float dt)
         {
-            if (!_tVisuals) return;
+            if (!tVisuals) return;
             if (!_isGrounded) return;
     
             _currentSlopeAngle = Vector3.Angle(avgNormal, Vector3.up);
@@ -314,12 +314,12 @@ namespace Actor.Modules
                 avgNormal.Normalize();
                 
                 var targetRot = Quaternion.FromToRotation(Vector3.up, avgNormal) * _t.rotation;
-                _tVisuals.rotation = Quaternion.Slerp(_tVisuals.rotation, targetRot, dt * rotationSpeed);
+                tVisuals.rotation = Quaternion.Slerp(tVisuals.rotation, targetRot, dt * rotationSpeed);
             }
             
             else
             {
-                _tVisuals.localRotation = Quaternion.Slerp(_tVisuals.localRotation, Quaternion.identity, dt * rotationSpeed);
+                tVisuals.localRotation = Quaternion.Slerp(tVisuals.localRotation, Quaternion.identity, dt * rotationSpeed);
             }
         }
         

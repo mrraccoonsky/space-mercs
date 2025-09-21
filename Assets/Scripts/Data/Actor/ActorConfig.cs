@@ -1,4 +1,4 @@
-﻿using Actor.Modules;
+﻿using Actor;
 using ECS.Bridges;
 using NaughtyAttributes;
 using UnityEngine;
@@ -25,7 +25,6 @@ namespace Data.Actor
         [BoxGroup("Target Origin:")] public float targetMoveSpeed = 10f;
         
         [BoxGroup("Aim:")] public float rotationSpeed = 500f;
-        [BoxGroup("Aim:")] public float rotationSmoothTime = 0.1f;
         [BoxGroup("Aim:")] public bool aimTowardsAttackDirection = true;
         
         // Attacker
@@ -39,7 +38,7 @@ namespace Data.Actor
         [BoxGroup("Scatter: ")] public float scatterAngle = 0f;
         [BoxGroup("Scatter: ")] public ScatterType scatterType = ScatterType.None;
         
-        [BoxGroup("Projectile:")] public ProjectileBridge projectilePrefab;
+        [BoxGroup("Projectile:")] public GameObject projectilePrefab;
         [BoxGroup("Projectile:")] public int projectileCount = 3;
         [BoxGroup("Projectile:")] public float projectileCooldown = 0.05f;
         [BoxGroup("Projectile:")] public float projectileLifetime = 0.5f;

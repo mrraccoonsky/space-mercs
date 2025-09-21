@@ -2,13 +2,15 @@ using System;
 using UnityEngine;
 using UnityEngine.Animations;
 using Data.Actor;
+using DI.Services;
 using ECS.Components;
 using ECS.Utils;
 using Tools;
 
-namespace Actor.Modules
+namespace Actor
 {
     using Leopotam.EcsLite;
+    using Zenject;
     
     [Serializable]
     public class ConstraintData
@@ -26,28 +28,32 @@ namespace Actor.Modules
     public class AAimer : MonoBehaviour, IActorModule
     {
         [Header("Target Origin:")]
-        [SerializeField] private float defaultTargetDistance = 3f;
-        [SerializeField] private float targetMoveSpeed = 10f;
+        [SerializeField] private GameObject targetOriginPrefab;
+        [SerializeField] private float defaultTargetDistance = 1f;
+        [SerializeField] private float targetMoveSpeed = 50f; 
         
         [Header("Rotation:")]
-        [SerializeField] private float aimingRotationSpeed = 500f;
-        [SerializeField] private float rotationSmoothTime = 0.01f;
-        [SerializeField] private bool aimTowardsAttackDirection = true;
+        [SerializeField] private float rotationSpeed = 10f;
+        [SerializeField] private bool aimTowardsAttackDirection;
 
         [SerializeField] private ConstraintData[] constraintData;
         
         private Transform _t;
         private Transform _targetOrigin;
 
-        private bool _isAiming;
-        private float _curRotVelocity;
         private Vector3 _lastOriginPos;
+        private bool _isAiming;
         
-        private const string RootName = "CHAR_TARGET_ORIGIN";
+        [Inject] private IPoolService _poolService;
         
         public bool IsEnabled { get; private set; }
         public int EntityId { get; private set; }
         public EcsWorld World { get; private set; }
+
+        private void OnDisable()
+        {
+            _poolService.Return(targetOriginPrefab, _targetOrigin.gameObject);
+        }
         
         public void Init(ActorConfig cfg, int entityId, EcsWorld world)
         {
@@ -59,7 +65,7 @@ namespace Actor.Modules
             
             _t = transform;
             
-            CreateTargetOrigin();
+            GetTargetOrigin();
             InitAimConstraints();
 
             // init config
@@ -68,8 +74,7 @@ namespace Actor.Modules
                 defaultTargetDistance = cfg.defaultTargetDistance;
                 targetMoveSpeed = cfg.targetMoveSpeed;
                 
-                aimingRotationSpeed = cfg.rotationSpeed;
-                rotationSmoothTime = cfg.rotationSmoothTime;
+                rotationSpeed = cfg.rotationSpeed;
                 aimTowardsAttackDirection = cfg.aimTowardsAttackDirection;
             }
             
@@ -88,9 +93,8 @@ namespace Actor.Modules
                 ref var aTransform = ref transformPool.Get(EntityId);
                 aTransform.Rotation = _t.rotation;
             }
-            
-            var aimPool = World.GetPool<AimComponent>();
-            if (aimPool.Has(EntityId))
+
+            if (EcsUtils.HasCompInPool<AimComponent>(World, EntityId, out var aimPool))
             {
                 ref var aAim = ref aimPool.Get(EntityId);
                 aAim.TargetOrigin = _targetOrigin;
@@ -128,12 +132,12 @@ namespace Actor.Modules
             
             ref var aInput = ref inputPool.Get(EntityId);
             
+            // aim towards attack direction
             var isAttacking = false;
-            
             if (EcsUtils.HasCompInPool<AttackComponent>(World, EntityId, out var attackPool))
             {
                 ref var aAttack = ref attackPool.Get(EntityId);
-                isAttacking = aAttack.IsAttacking;
+                isAttacking = aimTowardsAttackDirection && (aAttack.IsAttacking || aInput.IsAttackHeld);
             }
             
             _isAiming = UpdateTargetOrigin(aInput, isAttacking, dt);
@@ -163,9 +167,7 @@ namespace Actor.Modules
         
         private void UpdateAimConstraints(float dt)
         {
-            // var distance = Vector3.Distance(_t.position, _targetOrigin.position);
             var distance = (_targetOrigin.position - _t.position).magnitude;
-            
             foreach (var c in constraintData)
             {
                 var curWeight = c.constraint.weight;
@@ -204,18 +206,10 @@ namespace Actor.Modules
             }
         }
         
-        private void CreateTargetOrigin()
+        private void GetTargetOrigin()
         {
-            var root = GameObject.Find(RootName);
-            if (root == null)
-            {
-                root = new GameObject(RootName);
-                // DebCon.Log("Root created!", "AAimer", gameObject);
-            }
-            
-            _targetOrigin = new GameObject($"targetOrigin_{name}").transform;
+            _targetOrigin = _poolService.Get<Transform>(targetOriginPrefab);
             _targetOrigin.position = _t.position + _t.forward * defaultTargetDistance;
-            _targetOrigin.SetParent(root.transform);
             _lastOriginPos = _targetOrigin.position;
         }
 
@@ -225,17 +219,18 @@ namespace Actor.Modules
             var currentTargetPos = _targetOrigin.position;
             var targetWorldPos = _lastOriginPos;
             var move = aInput.Movement;
+            
+            var canAim = aInput.AimPosition != Vector3.zero;
             var isAiming = false;
-
-            var canAim = aInput.AimPosition != Vector3.zero; // && aActor is { IsGrounded: true, HasJumped: false };
-            if (canAim && (aimTowardsAttackDirection && (aInput.IsAttackHeld || isAttacking) || aInput.IsAimHeld))
+            
+            if (canAim && (isAttacking || aInput.IsAimHeld))
             {
                 targetWorldPos = aInput.AimPosition;
                 
-                // slightly adjust the target origin for camera-related aiming
-                if (mainCamera != null)
+                // adjust the target origin for camera-related aiming (aim cursor offset)
+                if (mainCamera != null && mainCamera.orthographic)
                 {
-                    // todo: make this configurable / based on certain camera settings
+                    // todo: make this configurable and based on certain camera settings, projectile origin height, etc
                     targetWorldPos -= mainCamera.transform.forward * 1.2f;
                 }
                 
@@ -285,12 +280,7 @@ namespace Actor.Modules
             var lookDir = _targetOrigin.position - _t.position;
             var targetRotation = Quaternion.LookRotation(new Vector3(lookDir.x, 0, lookDir.z));
     
-            // Smoothly rotate towards the target point
-            _t.rotation = Quaternion.Slerp(
-                _t.rotation, 
-                targetRotation, 
-                aimingRotationSpeed * dt
-            );
+            _t.rotation = Quaternion.Slerp(_t.rotation, targetRotation, rotationSpeed * dt);
         }
     }
 }

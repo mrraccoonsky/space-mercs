@@ -18,13 +18,7 @@
         public bool IsAttackHeld;
         public bool IsAttackReleased;
 
-        public Vector2 CursorPosition;
-        public Vector2 CursorDelta;
-        
-        // Player-only
-        public bool IsRotatingCamera;
-
-        // NOT PRESENT IN THE INPUT SERVICE
+        // player-only, not present in the input service
         public Camera MainCamera;
         public Vector3 AimPosition;
     }

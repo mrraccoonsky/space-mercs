@@ -1,6 +1,6 @@
 ﻿using Data.Actor;
 
-namespace Actor.Modules
+namespace Actor
 {
     using Leopotam.EcsLite;
     

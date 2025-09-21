@@ -1,5 +1,5 @@
 ﻿using UnityEngine;
-using Actor.Modules;
+using Actor;
 using Data;
 using Data.Actor;
 using ECS.Components;

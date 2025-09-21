@@ -23,7 +23,6 @@ MonoBehaviour:
   defaultTargetDistance: 1
   targetMoveSpeed: 50
   rotationSpeed: 10
-  rotationSmoothTime: 0.1
   aimTowardsAttackDirection: 0
   attackCooldown: 0.8
   holdBurstTransform: 1
@@ -31,7 +30,7 @@ MonoBehaviour:
   burstCooldown: 0.1
   scatterAngle: 0
   scatterType: 0
-  projectilePrefab: {fileID: 8346639860500835342, guid: e335959515330b446a260f1be62b5000, type: 3}
+  projectilePrefab: {fileID: 3905571746805792301, guid: e335959515330b446a260f1be62b5000, type: 3}
   projectileCount: 20
   projectileCooldown: 0.01
   projectileLifetime: 0.6

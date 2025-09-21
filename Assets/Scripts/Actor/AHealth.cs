@@ -4,7 +4,7 @@ using ECS.Components;
 using ECS.Utils;
 using Tools;
 
-namespace Actor.Modules
+namespace Actor
 {
     using Leopotam.EcsLite;
     
@@ -21,6 +21,7 @@ namespace Actor.Modules
         [SerializeField] private Vector3 hitboxSize = Vector3.one;
         
         [Header("Visuals:")]
+        
         [SerializeField] private ParticleSystem hitFxPrefab;
         
         private BoxCollider _hitbox;
@@ -113,21 +114,22 @@ namespace Actor.Modules
                 _hitTimer -= dt;
             }
 
-            if (_accumHealthChange < 0f)
+            if (_accumHealthChange != 0f)
             {
-                PlayHitFx();
+                if (_accumHealthChange < 0f)
+                {
+                    PlayHitFx();
+                    DebCon.Info(gameObject.name + " got HIT for " + _accumHealthChange + ", current hp: " + _currentHealth, "AHealth", gameObject);
+                }
+                else
+                {
+                    DebCon.Info(gameObject.name + " got HEALED for " + _accumHealthChange + ", current hp: " + _currentHealth, "AHealth", gameObject);
+                }
                 
                 _currentHealth += _accumHealthChange;
-                DebCon.Info(gameObject.name + " got HIT for " + _accumHealthChange + ", current hp: " + _currentHealth, "AHealth", gameObject);
+                _currentHealth = Mathf.Clamp(_currentHealth, 0f, maxHealth);
             }
             
-            if (_accumHealthChange > 0f)
-            {
-                _currentHealth += _accumHealthChange;
-                DebCon.Info(gameObject.name + " got HEALED for " + _accumHealthChange + ", current hp: " + _currentHealth, "AHealth", gameObject);
-            }
-
-            _currentHealth = Mathf.Clamp(_currentHealth, 0f, maxHealth);
             _isDead = _currentHealth <= 0f;
             _accumHealthChange = 0f;
 

@@ -18,7 +18,6 @@
         bool IsAttackHeld { get; }
         bool IsAttackReleased { get; }
 
-        // player-only
         Vector2 CursorPosition { get; }
         Vector2 CursorDelta { get; }
         bool IsRotatingCamera { get; }

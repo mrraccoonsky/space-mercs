@@ -1,7 +1,6 @@
 ﻿using UnityEngine;
 using Data;
 using Data.AI;
-using ECS.Bridges;
 using ECS.Components;
 using ECS.Utils;
 
@@ -16,10 +15,6 @@ namespace ECS.Systems
         private readonly EcsFilter _aiFilter;
         private readonly EcsFilter _targetFilter;
         
-        private readonly LayerMask _obstacleLayer;
-        
-        [Inject] private GlobalVariablesConfig _globalVars;
-        
         public AIPerceptionSystem(EcsWorld world)
         {
             _world = world;
@@ -31,8 +26,6 @@ namespace ECS.Systems
             _targetFilter = _world.Filter<TransformComponent>()
                 .Inc<ActorComponent>()
                 .End();
-            
-            _obstacleLayer = LayerMask.GetMask("Default", "Ground", "Obstacle");
         }
         
         public void Init(IEcsSystems systems)
@@ -55,9 +48,6 @@ namespace ECS.Systems
                 if (!EcsUtils.HasCompInPool<AIPerceptionComponent>(_world, entity, out var perceptionPool))
                 {
                     ref var aPerception = ref perceptionPool.Add(entity);
-                    
-                    aPerception.TimeSinceLastSawTarget = 0f;
-                    aPerception.LastKnownTargetPosition = Vector3.zero;
                     ResetPerceptionData(ref aPerception);
                 }
             }
@@ -66,12 +56,14 @@ namespace ECS.Systems
         public void Run(IEcsSystems systems)
         {
             var transformPool = _world.GetPool<TransformComponent>();
+            var aiControlledPool = _world.GetPool<AIControlledComponent>();
             var behaviorPool = _world.GetPool<AIBehaviorComponent>();
             var perceptionPool = _world.GetPool<AIPerceptionComponent>();
             
             // update perception for all AI entities
             foreach (var entity in _aiFilter)
             {
+                ref var aiControlled = ref aiControlledPool.Get(entity);
                 ref var aBehavior = ref behaviorPool.Get(entity);
                 ref var aPerception = ref perceptionPool.Get(entity);
 
@@ -98,7 +90,6 @@ namespace ECS.Systems
                     // self transform data
                     ref var aTransform = ref transformPool.Get(entity);
                     var pos = aTransform.Position;
-                    var lookDir = aTransform.Rotation * Vector3.forward;
                 
                     // target transform data
                     ref var aTargetTransform = ref transformPool.Get(possibleTargetId);
@@ -106,13 +97,9 @@ namespace ECS.Systems
                     var targetDir = targetPos - pos;
                 
                     // various checks
-                    var stateChecksPass = aBehavior.CurrentState
-                        is AIBehaviorState.Chase
-                        or AIBehaviorState.Attack;
-                    
                     var detectionRadiusPass = CheckDistance(aBehavior.DetectionRadius, targetDir.magnitude);
                     var healthCheckPass = CheckHealth(possibleTargetId);
-                    var lineOfSightPass = CheckLineOfSight(pos, targetPos, possibleTargetId);
+                    var lineOfSightPass = aiControlled.Bridge == null || aiControlled.Bridge.CheckLineOfSight(pos, targetPos, possibleTargetId);
                     
                     aPerception.DetectionRadiusPass = detectionRadiusPass;
                     aPerception.HealthCheckPass = healthCheckPass;
@@ -122,7 +109,6 @@ namespace ECS.Systems
                     if (perceptionChecksPass)
                     {
                         aPerception.targetEntityId = possibleTargetId;
-                    
                         aPerception.DistanceToTarget = targetDir.magnitude;
                         aPerception.DirectionToTarget = targetDir.normalized;
                         aPerception.TimeSinceLastSawTarget = 0f;
@@ -130,25 +116,12 @@ namespace ECS.Systems
                     }
                     else
                     {
-                        // todo: this should be improved
-                        aPerception.TimeSinceLastSawTarget += Time.deltaTime;
-                        if (aPerception.LastKnownTargetPosition != Vector3.zero && aPerception.TimeSinceLastSawTarget >= 1f)
-                        {
-                            aPerception.LastKnownTargetPosition = Vector3.zero;
-                            ResetPerceptionData(ref aPerception);
-                        }
+                        UpdateTimeSinceLastSawTarget(ref aPerception);
                     }
                 }
                 else
                 {
-                    // todo: this should be improved
-                    aPerception.TimeSinceLastSawTarget += Time.deltaTime;
-                    if (aPerception.LastKnownTargetPosition != Vector3.zero &&
-                        aPerception.TimeSinceLastSawTarget >= 1f)
-                    {
-                        aPerception.LastKnownTargetPosition = Vector3.zero;
-                        ResetPerceptionData(ref aPerception);
-                    }
+                    UpdateTimeSinceLastSawTarget(ref aPerception);
                 }
             }
         }
@@ -208,33 +181,15 @@ namespace ECS.Systems
             return !aHealth.IsDead;
         }
         
-        private bool CheckLineOfSight(Vector3 from, Vector3 to, int targetEntityId)
+        private void UpdateTimeSinceLastSawTarget(ref AIPerceptionComponent aPerception)
         {
-            var aFrom = from + Vector3.up;
-            var aTo = to + Vector3.up;
+            aPerception.TimeSinceLastSawTarget += Time.deltaTime;
             
-            var targetDirection = aTo - aFrom;
-            var targetDistance = targetDirection.magnitude;
-            targetDirection = targetDirection.normalized;
-            
-            if (Physics.Raycast(aFrom, targetDirection, out var hit, targetDistance, _obstacleLayer))
+            if (aPerception.LastKnownTargetPosition != Vector3.zero &&
+                aPerception.TimeSinceLastSawTarget >= 1f)
             {
-                // todo: use inner (fraction) tag instead of gameObject based one
-                if (_globalVars?.TagConfig != null)
-                {
-                    if (!_globalVars.TagConfig.TryGetTag("Player", out var tag)) return false;
-                    if (!hit.collider.CompareTag(tag)) return false;
-                }
-                
-                if (!hit.collider.TryGetComponent(out ActorBridge aBridge)) return false;
-                if (aBridge.EntityId != targetEntityId) return false;
-                
-                // ...
-                
-                return true;
+                ResetPerceptionData(ref aPerception);
             }
-            
-            return false;
         }
         
         private void LoadBehaviorConfig(ref AIBehaviorComponent aBehavior, AIConfig cfg)

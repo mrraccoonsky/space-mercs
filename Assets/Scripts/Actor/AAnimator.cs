@@ -4,7 +4,7 @@ using ECS.Components;
 using ECS.Utils;
 using Tools;
 
-namespace Actor.Modules
+namespace Actor
 {
     using Leopotam.EcsLite;
     

@@ -15,7 +15,9 @@ namespace ECS.Bridges
     {
         [SerializeField] private NavMeshAgent agent;
         [SerializeField] private AIConfig config;
-        
+        [SerializeField] private LayerMask obstacleLayer;
+     
+        // debug values display
         [ReadOnly, SerializeField] private AIBehaviorState currentState;
         [ReadOnly, SerializeField] private float stateTimer;
         
@@ -28,7 +30,6 @@ namespace ECS.Bridges
         [ReadOnly, SerializeField] private bool detectionRadiusPass;
         [ReadOnly, SerializeField] private bool healthCheckPass;
         [ReadOnly, SerializeField] private bool lineOfSightPass;
-        [ReadOnly, SerializeField] private bool fovAnglePass;
         
         private Transform _t;
         
@@ -38,33 +39,6 @@ namespace ECS.Bridges
         private void OnDrawGizmos()
         {
             if (!_t) return;
-
-            // FOV cone visualization
-            /* Color color;
-            if (!fovAnglePass)
-            {
-                color = Color.gray;
-            }
-            else if (!lineOfSightPass || !healthCheckPass || !detectionRadiusPass)
-            {
-                color = Color.darkGreen;
-            }
-            else
-            {
-                color = Color.green;
-            }
-
-            Gizmos.color = color;
-            var displayPos = _t.position + Vector3.up;
-            var angle = config.fieldOfViewAngle / 2f;
-            var forward = _t.forward * config.detectionRadius;
-            
-            var leftConeEdge = displayPos + Quaternion.Euler(0, angle, 0) * forward;
-            var rightConeEdge = displayPos + Quaternion.Euler(0, -angle, 0) * forward;
-                
-            Gizmos.DrawLine(displayPos, displayPos + forward);
-            Gizmos.DrawLine(displayPos, leftConeEdge);
-            Gizmos.DrawLine(displayPos, rightConeEdge); */
             
             // last known target position / line of sight visualization
             if (lastKnownTargetPos != Vector3.zero)
@@ -84,14 +58,6 @@ namespace ECS.Bridges
             // init ecs
             EntityId = entityId;
             World = world;
-            
-            /* if (_agent == null)
-            {
-                if (!TryGetComponent(out _agent))
-                {
-                    _agent = gameObject.AddComponent<NavMeshAgent>();
-                }
-            } */
 
             if (!EcsUtils.HasCompInPool<AIControlledComponent>(world, entityId, out var aiPool))
             {
@@ -103,6 +69,8 @@ namespace ECS.Bridges
                 aiControlled.Agent = agent;
                 aiControlled.Config = config;
             }
+            
+            obstacleLayer = LayerMask.GetMask("Ground", "Obstacle");
         }
 
         public void Tick(float dt)
@@ -129,6 +97,18 @@ namespace ECS.Bridges
                 
                 hasTarget = perception.HasTarget;
             }
+        }
+        
+        public bool CheckLineOfSight(Vector3 from, Vector3 to, int target)
+        {
+            var aFrom = from + Vector3.up;
+            var aTo = to + Vector3.up;
+            
+            var targetDirection = aTo - aFrom;
+            var targetDistance = targetDirection.magnitude;
+            targetDirection = targetDirection.normalized;
+            
+            return !Physics.Raycast(aFrom, targetDirection, out var hit, targetDistance, obstacleLayer);
         }
     }
 }

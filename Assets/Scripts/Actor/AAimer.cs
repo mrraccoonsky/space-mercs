@@ -52,7 +52,10 @@ namespace Actor
 
         private void OnDisable()
         {
-            _poolService.Return(targetOriginPrefab, _targetOrigin.gameObject);
+            if (_targetOrigin != null)
+            {
+                _poolService?.Return(targetOriginPrefab, _targetOrigin.gameObject);
+            }
         }
         
         public void Init(ActorConfig cfg, int entityId, EcsWorld world)

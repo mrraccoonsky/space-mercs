@@ -116,6 +116,9 @@ namespace Actor
 
             if (_accumHealthChange != 0f)
             {
+                _currentHealth += _accumHealthChange;
+                _currentHealth = Mathf.Clamp(_currentHealth, 0f, maxHealth);
+                
                 if (_accumHealthChange < 0f)
                 {
                     PlayHitFx();
@@ -125,9 +128,6 @@ namespace Actor
                 {
                     DebCon.Info(gameObject.name + " got HEALED for " + _accumHealthChange + ", current hp: " + _currentHealth, "AHealth", gameObject);
                 }
-                
-                _currentHealth += _accumHealthChange;
-                _currentHealth = Mathf.Clamp(_currentHealth, 0f, maxHealth);
             }
             
             _isDead = _currentHealth <= 0f;

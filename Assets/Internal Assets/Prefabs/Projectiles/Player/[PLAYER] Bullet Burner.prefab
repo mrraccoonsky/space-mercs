@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8601502829413212348}
   - component: {fileID: 1250697839939437827}
   - component: {fileID: 1497128226920769748}
-  m_Layer: 30
+  m_Layer: 29
   m_Name: Main
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4913,7 +4913,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6889435858857866265}
   - component: {fileID: 8346639860500835342}
-  m_Layer: 30
+  m_Layer: 29
   m_Name: '[PLAYER] Bullet Burner'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4969,7 +4969,7 @@ GameObject:
   - component: {fileID: 6884016884770130798}
   - component: {fileID: 1873335685147960508}
   - component: {fileID: 4780923910787640169}
-  m_Layer: 30
+  m_Layer: 29
   m_Name: Launch
   m_TagString: Untagged
   m_Icon: {fileID: 0}

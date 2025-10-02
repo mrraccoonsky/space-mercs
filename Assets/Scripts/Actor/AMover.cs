@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using Core.Camera;
 using Data.Actor;
 using ECS.Components;
 using ECS.Utils;
@@ -7,6 +8,7 @@ using Tools;
 namespace Actor
 {
     using Leopotam.EcsLite;
+    using Zenject;
     
     public class AMover : MonoBehaviour, IActorModule
     {
@@ -14,6 +16,7 @@ namespace Actor
         
         [Header("Movement:")]
         [SerializeField] private float speed = 5f;
+        [SerializeField] private float screenClampBuffer;   // clamps the actor's position to the camera's viewport if > 0 
         
         [Space]
         [SerializeField] private float uphillStartAngle = 5f;
@@ -47,23 +50,25 @@ namespace Actor
         private Transform _t;
         private CharacterController _controller;
 
-        private float _slopeSpeedMult = 1f;
         private Vector3 _moveDir;
         private bool _isGrounded;
         
         private float _verticalVelocity;
-        private float _jumpCooldownLeft = -1;
-        private float _jumpDelayLeft = -1;
+        private float _jumpCooldownLeft = -1f;
+        private float _jumpDelayLeft = -1f;
         
         private bool _isJumpTriggered;
         private bool _isJumpInputReleased = true;
-
+        
+        private float _slopeSpeedMult = 1f;
         private float _currentSlopeAngle;
+
+        [Inject] private CameraController _cameraController;
         
         public bool IsEnabled { get; private set; }
         public int EntityId { get; private set; }
         public EcsWorld World { get; private set; }
-
+        
         public void Init(ActorConfig cfg, int entityId, EcsWorld world)
         {
             IsEnabled = enabled;
@@ -101,7 +106,24 @@ namespace Actor
             
             SyncEcsState();
         }
-
+        
+        public void Reset()
+        {
+            _moveDir = Vector3.zero;
+            _isGrounded = false;
+            
+            _verticalVelocity = 0f;
+            
+            _jumpCooldownLeft = -1;
+            _jumpDelayLeft = -1;
+            
+            _isJumpTriggered = false;
+            _isJumpInputReleased = true;
+            
+            _slopeSpeedMult = 1f;
+            _currentSlopeAngle = 0f;
+        }
+        
         public void SyncEcsState()
         {
             if (EcsUtils.HasCompInPool<TransformComponent>(World, EntityId, out var transformPool))
@@ -134,7 +156,7 @@ namespace Actor
                 return;
             }
             
-            // todo: think of a better way to kill switch logics 
+            // todo: think of a better way to kill switch logics
             if (EcsUtils.HasCompInPool<HealthComponent>(World, EntityId, out var healthPool))
             {
                 ref var aHealth = ref healthPool.Get(EntityId);
@@ -168,6 +190,9 @@ namespace Actor
             move.y = _verticalVelocity * dt;
             
             _controller.Move(move);
+            
+            // todo: think of a better place to do this
+            ClampToViewport(ref aInput);
         }
         
         private Vector3 CalculateMoveDirection(InputComponent input)
@@ -197,26 +222,21 @@ namespace Actor
         private float CalculateSlopeSpeedMultiplier(Vector3 moveDirection)
         {
             if (!_isGrounded || moveDirection.magnitude < 0.1f) return 1f;
-                
-            // cast a ray to get the ground normal
+            
             var ray = new Ray(_t.position + _t.up * groundCheckOffset, Vector3.down);
             if (!Physics.Raycast(ray, out var hit, groundCheckDistance)) return 1f;
-                
-            // calculate the angle between movement direction and ground normal
             var slopeAngle = Vector3.Angle(hit.normal, moveDirection) - 90f;
             
             // if the angle is greater than threshold, we're going uphill
             if (slopeAngle > uphillStartAngle)
             {
-                // calculate a multiplier based on how steep the uphill is
                 var t = Mathf.InverseLerp(uphillStartAngle, uphillMaxAngle, slopeAngle);
-                return Mathf.Lerp(1.0f, uphillSpeedMultiplier, t);
+                return Mathf.Lerp(1f, uphillSpeedMultiplier, t);
             }
             
             // if the angle is less than negative threshold, we're going downhill
             if (slopeAngle < -downhillStartAngle)
             {
-                // calculate a multiplier based on how steep the downhill is
                 var t = Mathf.InverseLerp(-downhillStartAngle, -downhillMaxAngle, slopeAngle);
                 return Mathf.Lerp(1f, downhillSpeedMultiplier, t);
             }
@@ -352,6 +372,17 @@ namespace Actor
             }
     
             return (hitCount > 0, avgNormal, hitCount);
+        }
+
+        private void ClampToViewport(ref InputComponent input)
+        {
+            if (input.Movement.magnitude < 0.1f) return;
+            if (screenClampBuffer <= 0f || _cameraController == null) return;
+            
+            var isVisible = _cameraController.CheckIfPointIsVisible(_t.position);
+            if (!isVisible) return;
+            
+            _t.position = _cameraController.GetClampedViewportPosition(_t.position, screenClampBuffer);
         }
     }
 }

@@ -36,7 +36,8 @@ namespace Actor
         private float _hitTimer = -1f;
         
         private bool _isDead;
-
+        private float _deadTimer = -1f;
+        
         public bool IsEnabled { get; private set; }
         public int EntityId { get; private set; }
         public EcsWorld World { get; private set; }
@@ -69,8 +70,6 @@ namespace Actor
                 hitCooldown = cfg.hitCooldown;
             }
             
-            _currentHealth = maxHealth;
-            
             CreateHitbox();
             CreateHitFx();
             
@@ -78,6 +77,18 @@ namespace Actor
             healthPool.Add(entityId);
             
             SyncEcsState();
+        }
+
+        public void Reset()
+        {
+            _currentHealth = maxHealth;
+            _accumHealthChange = 0f;
+            
+            _isHit = false;
+            _isDead = false;
+            
+            _hitTimer = -1f;
+            _deadTimer = -1f;
         }
 
         public void SyncEcsState()
@@ -99,6 +110,7 @@ namespace Actor
                 aHealth.LastHitDirection = _lastHitDirection;
                 
                 aHealth.IsDead = _isDead;
+                aHealth.DeadTimer = _isDead ? _deadTimer : -1f;
             }
         }
 
@@ -112,6 +124,11 @@ namespace Actor
             if (_hitTimer > 0f)
             {
                 _hitTimer -= dt;
+            }
+
+            if (_deadTimer > 0f)
+            {
+                _deadTimer -= dt;
             }
 
             if (_accumHealthChange != 0f)
@@ -129,14 +146,21 @@ namespace Actor
                     DebCon.Info(gameObject.name + " got HEALED for " + _accumHealthChange + ", current hp: " + _currentHealth, "AHealth", gameObject);
                 }
             }
+
+            // single frame check if health is 0 and not dead yet - start dead timer
+            if (_currentHealth <= 0f && !_isDead)
+            {
+                _deadTimer = 2f;
+            }
             
             _isDead = _currentHealth <= 0f;
-            _accumHealthChange = 0f;
 
             if (_hitbox)
             {
                 _hitbox.enabled = !_isDead;
             }
+            
+            _accumHealthChange = 0f;
         }
         
         public void RegisterHitData(Vector3 hitPosition, Vector3 hitDirection)

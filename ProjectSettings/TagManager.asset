@@ -35,8 +35,8 @@ TagManager:
   - 
   - 
   - 
-  - 
   - Projectile
+  - RaycastCatcher
   - Hitbox
   m_SortingLayers:
   - name: Default

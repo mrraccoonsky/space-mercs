@@ -23,5 +23,6 @@
         bool IsRotatingCamera { get; }
 
         void Update();
+        Vector3 GetAimPosition();
     }
 }

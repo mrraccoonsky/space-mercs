@@ -120,6 +120,24 @@ namespace Actor
             
             SyncEcsState();
         }
+
+        public void Reset()
+        {
+            _holdSpawnPos = Vector3.zero;
+            _holdSpawnRot = Quaternion.identity;
+            
+            _attackCooldownTimer = 0f;
+         
+            _burstCount = 0;
+            _burstCooldownTimer = 0f;
+            _scatterAngle = 0f;
+        
+            _projectileCount = 0;
+            _projectileCooldownTimer = 0f;
+
+            _isAttacking = false;
+            _isAttackTriggered = false;
+        }
         
         public void SyncEcsState()
         {
@@ -202,7 +220,7 @@ namespace Actor
                     _burstCooldownTimer = burstCooldown;
                     _projectileCooldownTimer = 0f;
                     _burstCount++;
-                    _scatterAngle = 0;
+                    _scatterAngle = 0f;
                     _projectileCount = 0;
                     
                     // reset hold spawn position and rotation

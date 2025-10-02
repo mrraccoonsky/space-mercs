@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6889435858857866265}
   - component: {fileID: 8346639860500835342}
-  m_Layer: 30
+  m_Layer: 29
   m_Name: '[PLAYER] Bullet Rifle'
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -66,7 +66,7 @@ GameObject:
   - component: {fileID: 7793422406836592139}
   - component: {fileID: 1117015574583468431}
   - component: {fileID: 7005058176832949671}
-  m_Layer: 30
+  m_Layer: 29
   m_Name: Main
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -4969,7 +4969,7 @@ GameObject:
   - component: {fileID: 1990550214952839765}
   - component: {fileID: 3672819274663801811}
   - component: {fileID: 6604335337971651356}
-  m_Layer: 30
+  m_Layer: 29
   m_Name: Launch
   m_TagString: Untagged
   m_Icon: {fileID: 0}

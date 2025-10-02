@@ -1,5 +1,4 @@
 ﻿using UnityEngine.AI;
-using Actor;
 using Data.AI;
 using ECS.Bridges;
 
@@ -10,5 +9,7 @@ namespace ECS.Components
         public AIActorBridge Bridge;
         public AIConfig Config;
         public NavMeshAgent Agent;
+        
+        public float LastVisibleTime;
     }
 }

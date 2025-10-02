@@ -47,10 +47,10 @@ namespace ECS.AI.States
                 }
             }
             
-            /* if (aBehavior.StateTimer > 5f + Random.value * 3f) // todo: use behavior config
+            if (aBehavior.StateTimer > 5f + Random.value * 3f) // todo: use behavior config
             {
-                ChangeState(AIBehaviorState.Idle);
-            } */
+                SwitchState(AIBehaviorState.Idle);
+            }
         }
         
         public override void GenerateInput(ref InputComponent input, float dt)
@@ -103,7 +103,7 @@ namespace ECS.AI.States
             }
             
             // fallback if no valid position found
-            // _targetPos = position + new Vector3(Random.Range(-3f, 3f), 0, Random.Range(-3f, 3f));
+            _targetPos = position + new Vector3(Random.Range(-3f, 3f), 0, Random.Range(-3f, 3f));
         }
     }
 }

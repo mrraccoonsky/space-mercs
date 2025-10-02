@@ -25,6 +25,13 @@ namespace DI.Services
         public Vector2 CursorDelta { get; private set; }
         public bool IsRotatingCamera { get; private set; }
         
+        private readonly LayerMask _raycastLayerMask;
+        
+        public KeyboardMouseInputService()
+        {
+            _raycastLayerMask = LayerMask.GetMask("RaycastCatcher");
+        }
+        
         public void Update()
         {
             if (MainCamera == null)
@@ -57,6 +64,16 @@ namespace DI.Services
             CursorPosition = Mouse.current.position.ReadValue();
             CursorDelta = Mouse.current.delta.ReadValue();
             IsRotatingCamera = Keyboard.current.leftShiftKey.isPressed;
+        }
+
+        public Vector3 GetAimPosition()
+        {
+            if (MainCamera == null) return Vector3.zero;
+            
+            var ray = MainCamera.ScreenPointToRay(CursorPosition);
+            return Physics.Raycast(ray, out var hitInfo, 100f, _raycastLayerMask)
+                ? hitInfo.point
+                : Vector3.zero;
         }
     }
 }

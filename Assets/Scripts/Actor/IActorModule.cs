@@ -11,6 +11,7 @@ namespace Actor
         bool IsEnabled { get; }
         
         void Init(ActorConfig cfg, int entityId, EcsWorld world);
+        void Reset();
         void SyncEcsState();
         void Tick(float dt);
     }

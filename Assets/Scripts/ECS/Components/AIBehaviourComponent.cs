@@ -15,9 +15,9 @@
         public float StateTimer;                // time spent in current state
         
         public float DetectionRadius;           // how far the AI can detect targets
-        public float FieldOfViewAngle;          // field of view angle in degrees
-        
         public float AttackRange;               // maximum distance for attacks
         public float AttackCooldown;            // time between attacks
+        public float RandomChaseAttackMinTime;  // minimum time between random attacks while chasing
+        public float RandomChaseAttackMaxTime;  // maximum time between random attacks while chasing
     }
 }

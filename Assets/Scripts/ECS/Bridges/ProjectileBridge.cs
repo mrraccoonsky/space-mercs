@@ -61,6 +61,7 @@ namespace ECS.Bridges
         {
             _lifeTimer = 0f;
             _penetrationCount = 0;
+            gameObject.SetActive(true);
         }
         
         public void Init(int entityId, EcsWorld world)

@@ -11,7 +11,7 @@ GameObject:
   - component: {fileID: 8756139379661055752}
   - component: {fileID: 5828692746363076238}
   - component: {fileID: 4160371129037020737}
-  m_Layer: 30
+  m_Layer: 0
   m_Name: '[PLAYER] Hit Burner'
   m_TagString: Untagged
   m_Icon: {fileID: 0}

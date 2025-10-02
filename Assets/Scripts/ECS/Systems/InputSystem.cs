@@ -13,7 +13,6 @@ namespace ECS.Systems
         private readonly IInputService _inputService;
         
         private EcsFilter _playerFilter;
-        private static LayerMask _raycastLayerMask;
 
         public InputSystem(EcsWorld world, IInputService inputService)
         {
@@ -26,24 +25,6 @@ namespace ECS.Systems
             _playerFilter = _world.Filter<InputComponent>()
                 .Exc<AIControlledComponent>()
                 .End();
-
-            // todo: it shouldn't be here
-            _raycastLayerMask = LayerMask.GetMask("Ground");
-            
-            var actorPool = _world.GetPool<ActorComponent>();
-            var inputPool = _world.GetPool<InputComponent>();
-            
-            // add input component to player characters only
-            foreach (var e in _world.Filter<ActorComponent>().Exc<AIControlledComponent>().End())
-            {
-                ref var aActor = ref actorPool.Get(e);
-                var entityId = aActor.Bridge.EntityId;
-                if (!inputPool.Has(entityId))
-                {
-                    inputPool.Add(entityId);
-                    DebCon.Log($"Added input component to entity {entityId}", "InputSystem");
-                }
-            }
         }
 
         public void Run(IEcsSystems systems)
@@ -80,13 +61,7 @@ namespace ECS.Systems
             input.IsAttackHeld = inputService.IsAttackHeld;
             input.IsAttackReleased = inputService.IsAttackReleased;
             
-            // todo: it shouldn't be done in system
-            if (input.MainCamera)
-            {
-                var ray = input.MainCamera.ScreenPointToRay(inputService.CursorPosition);
-                Physics.Raycast(ray, out var hitInfo, 100f, _raycastLayerMask);
-                input.AimPosition = hitInfo.point;
-            }
+            input.AimPosition = inputService.GetAimPosition();
         }
     }
 }

@@ -12,7 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: adbe34f2a3c64f3db9c89405b99a22ca, type: 3}
   m_Name: Default AI
   m_EditorClassIdentifier: Assembly-CSharp::Data.AI.AIConfig
-  detectionRadius: 10
+  detectionRadius: 15
   fieldOfViewAngle: 60
-  attackCooldown: 1
+  attackCooldown: 2
   attackRange: 5
+  randomChaseAttackMinTime: 2
+  randomChaseAttackMaxTime: 4

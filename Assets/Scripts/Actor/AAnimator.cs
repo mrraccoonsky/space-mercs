@@ -31,7 +31,6 @@ namespace Actor
         
         // attacker
         private static readonly int IsAttacking = Animator.StringToHash("isAttacking");
-        private static readonly int IsAttackLanded = Animator.StringToHash("isAttackLanded");
         
         // health
         private static readonly int IsHit = Animator.StringToHash("isHit");
@@ -67,6 +66,11 @@ namespace Actor
             }
             
             _t = transform;
+        }
+
+        public void Reset()
+        {
+            // ...
         }
         
         public void SyncEcsState()
@@ -136,13 +140,11 @@ namespace Actor
             
             // Attack component
             var isAttacking = false;
-            var isAttackLanded = false;
 
             if (EcsUtils.HasCompInPool<AttackComponent>(World, EntityId, out var attackPool))
             {
                 ref var aAttack = ref attackPool.Get(EntityId);
                 isAttacking = aAttack.IsAttacking;
-                isAttackLanded = false;
             }
             
             // Health Component
@@ -167,7 +169,6 @@ namespace Actor
             
             // attacker
             animator.SetBool(IsAttacking, isAttacking);
-            animator.SetBool(IsAttackLanded, isAttackLanded);
             
             // health
             animator.SetBool(IsDead, isDead);

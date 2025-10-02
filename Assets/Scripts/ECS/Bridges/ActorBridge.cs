@@ -1,4 +1,5 @@
-﻿using UnityEngine;
+﻿using System;
+using UnityEngine;
 using Actor;
 using Data;
 using Data.Actor;
@@ -10,8 +11,11 @@ namespace ECS.Bridges
     using Leopotam.EcsLite;
     using Zenject;
     
+    [SelectionBase]
     public class ActorBridge : MonoBehaviour, IEcsBridge
     {
+        public event Action<ActorBridge> OnDisabled;
+        
         [SerializeField] private ActorConfig config;
 
         private Transform _t;
@@ -20,7 +24,34 @@ namespace ECS.Bridges
         public int EntityId { get; private set; }
         public EcsWorld World { get; private set; }
 
-        [Inject] private GlobalVariablesConfig _globalVars;
+        private GlobalVariablesConfig _globalVars;
+
+        [Inject]
+        public void Construct(DiContainer container)
+        {
+            _globalVars = container.Resolve<GlobalVariablesConfig>();
+
+            foreach (var module in GetComponentsInChildren<IActorModule>())
+            {
+                container.Inject(module);
+            }
+        }
+
+        private void OnDisable()
+        {
+            OnDisabled?.Invoke(this);
+        }
+        
+        public void Reset()
+        {
+            foreach (var module in _modules)
+            {
+                module.Reset();
+            }
+            
+            SyncEcsState();
+            gameObject.SetActive(true);
+        }
         
         public void Init(int entityId, EcsWorld world)
         {
@@ -46,12 +77,16 @@ namespace ECS.Bridges
             string strTag;
             if (gameObject.TryGetComponent(out AIActorBridge ai))
             {
-                strTag = "AI";
                 ai.Init(EntityId, World);
+                strTag = "AI";
             }
             else
             {
+                var inputPool = World.GetPool<InputComponent>();
+                inputPool.Add(entityId);
                 strTag = "Player";
+
+                DebCon.Log($"Added input component to entity {entityId}", "ActorBridge");
             }
             
             if (_globalVars?.TagConfig != null && _globalVars.TagConfig.TryGetTag(strTag, out var globalTag))
@@ -69,7 +104,7 @@ namespace ECS.Bridges
             SyncEcsState();
             DebCon.Log($"{name}:{EntityId} Init done!", "ActorBridge", gameObject);
         }
-
+        
         public void Tick(float dt)
         {
             foreach (var module in _modules)

@@ -18,5 +18,6 @@ namespace ECS.Components
         public Vector3 LastHitDirection;
         
         public bool IsDead;
+        public float DeadTimer;
     }
 }

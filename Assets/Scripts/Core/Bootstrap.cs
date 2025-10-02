@@ -31,5 +31,11 @@ namespace Core
         {
             _ecsBootstrap?.Tick();
         }
+        
+        private void OnDestroy()
+        {
+            DebCon.Warn("Destroying Bootstrap...");
+            _ecsBootstrap?.Destroy();
+        }
     }
 }

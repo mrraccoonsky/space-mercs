@@ -21,16 +21,16 @@ namespace Tools
 
         private readonly struct RgbColor
         {
-            private readonly byte r, g, b;
+            private readonly byte _r, _g, _b;
 
             public RgbColor(byte r, byte g, byte b)
             {
-                this.r = r;
-                this.g = g;
-                this.b = b;
+                _r = r;
+                _g = g;
+                _b = b;
             }
 
-            public string ToHex() => $"#{r:X2}{g:X2}{b:X2}FF";
+            public string ToHex() => $"#{_r:X2}{_g:X2}{_b:X2}FF";
         }
 
         private static readonly RgbColor ColorDefault = new(200, 200, 200);  // lt gray

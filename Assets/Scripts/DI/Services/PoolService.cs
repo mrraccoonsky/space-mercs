@@ -1,8 +1,6 @@
-using System;
-using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine;
 using Tools;
-using Object = UnityEngine.Object;
 
 namespace DI.Services
 {
@@ -27,16 +25,25 @@ namespace DI.Services
             }
 
             var root = GetRoot(prefab);
-            GameObject instance = null;
+            GameObject instance;
 
             if (queue.Count > 0)
             {
-                instance = queue.Dequeue();
-                instance.SetActive(true);
+                var go = queue.Dequeue();
+                if (go == null)
+                {
+                    DebCon.Err($"Pool for prefab {prefab.name} is empty.", "PoolService");
+                    return null;
+                }
+                
+                instance = go;
+                // instance.SetActive(true);
             }
             else
             {
                 instance = Object.Instantiate(prefab, Vector3.zero, Quaternion.identity, root.transform);
+                instance.SetActive(false);
+
                 var pooledObj = instance.gameObject.AddComponent<PooledObject>();
                 pooledObj.Prefab = prefab;
                 pooledObj.Pool = this;

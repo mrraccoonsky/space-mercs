@@ -1,24 +1,30 @@
 ﻿using UnityEngine;
-using Data;
-using Data.AI;
+using DI.Services;
 using ECS.Components;
 using ECS.Utils;
+using EventSystem;
+using Tools;
 
 namespace ECS.Systems
 {
     using Leopotam.EcsLite;
-    using Zenject;
     
-    public class AIPerceptionSystem : IEcsRunSystem, IEcsInitSystem
+    public class AIPerceptionSystem : IEcsRunSystem, IEcsInitSystem, IEcsDestroySystem
     {
         private readonly EcsWorld _world;
-        private readonly EcsFilter _aiFilter;
-        private readonly EcsFilter _targetFilter;
+        private readonly IEventBusService _eventBus;
         
-        public AIPerceptionSystem(EcsWorld world)
+        private EcsFilter _aiFilter;
+        private EcsFilter _targetFilter;
+        
+        public AIPerceptionSystem(EcsWorld world, IEventBusService eventBus)
         {
             _world = world;
-            
+            _eventBus = eventBus;
+        }
+        
+        public void Init(IEcsSystems systems)
+        {
             _aiFilter = _world.Filter<TransformComponent>()
                 .Inc<AIControlledComponent>()
                 .End();
@@ -26,44 +32,27 @@ namespace ECS.Systems
             _targetFilter = _world.Filter<TransformComponent>()
                 .Inc<ActorComponent>()
                 .End();
+
+            _eventBus.Subscribe<ActorSpawnedEvent>(HandleActorSpawned);
         }
         
-        public void Init(IEcsSystems systems)
+        public void Destroy(IEcsSystems systems)
         {
-            var aiControlledPool = _world.GetPool<AIControlledComponent>();
-            foreach (var entity in _aiFilter)
-            {
-                ref var aiControlled = ref aiControlledPool.Get(entity);
-                var cfg = aiControlled.Config;
-                
-                if (!EcsUtils.HasCompInPool<AIBehaviorComponent>(_world, entity, out var behaviorPool))
-                {
-                    ref var aBehavior = ref behaviorPool.Add(entity);
-                    aBehavior.CurrentState = AIBehaviorState.Idle;
-                    aBehavior.StateTimer = 0f;
-                    LoadBehaviorConfig(ref aBehavior, cfg);
-                }
-                
-                // initialize with default values
-                if (!EcsUtils.HasCompInPool<AIPerceptionComponent>(_world, entity, out var perceptionPool))
-                {
-                    ref var aPerception = ref perceptionPool.Add(entity);
-                    ResetPerceptionData(ref aPerception);
-                }
-            }
+            DebCon.Warn("Destroying AIPerceptionSystem...");
+            _eventBus.Unsubscribe<ActorSpawnedEvent>(HandleActorSpawned);
         }
         
         public void Run(IEcsSystems systems)
         {
             var transformPool = _world.GetPool<TransformComponent>();
-            var aiControlledPool = _world.GetPool<AIControlledComponent>();
+            var aiPool = _world.GetPool<AIControlledComponent>();
             var behaviorPool = _world.GetPool<AIBehaviorComponent>();
             var perceptionPool = _world.GetPool<AIPerceptionComponent>();
             
             // update perception for all AI entities
             foreach (var entity in _aiFilter)
             {
-                ref var aiControlled = ref aiControlledPool.Get(entity);
+                ref var aAI = ref aiPool.Get(entity);
                 ref var aBehavior = ref behaviorPool.Get(entity);
                 ref var aPerception = ref perceptionPool.Get(entity);
 
@@ -99,7 +88,7 @@ namespace ECS.Systems
                     // various checks
                     var detectionRadiusPass = CheckDistance(aBehavior.DetectionRadius, targetDir.magnitude);
                     var healthCheckPass = CheckHealth(possibleTargetId);
-                    var lineOfSightPass = aiControlled.Bridge == null || aiControlled.Bridge.CheckLineOfSight(pos, targetPos, possibleTargetId);
+                    var lineOfSightPass = aAI.Bridge == null || aAI.Bridge.CheckLineOfSight(pos, targetPos);
                     
                     aPerception.DetectionRadiusPass = detectionRadiusPass;
                     aPerception.HealthCheckPass = healthCheckPass;
@@ -191,24 +180,6 @@ namespace ECS.Systems
                 ResetPerceptionData(ref aPerception);
             }
         }
-        
-        private void LoadBehaviorConfig(ref AIBehaviorComponent aBehavior, AIConfig cfg)
-        {
-            if (cfg != null)
-            {
-                aBehavior.DetectionRadius = cfg.detectionRadius;
-                aBehavior.FieldOfViewAngle = cfg.fieldOfViewAngle;
-                aBehavior.AttackRange = cfg.attackRange;
-                aBehavior.AttackCooldown = cfg.attackCooldown;
-            }
-            else
-            {
-                aBehavior.DetectionRadius = 10f;
-                aBehavior.FieldOfViewAngle = 60f;
-                aBehavior.AttackRange = 1.5f;
-                aBehavior.AttackCooldown = 1f;
-            }
-        }
 
         private void ResetPerceptionData(ref AIPerceptionComponent aPerception)
         {
@@ -222,6 +193,28 @@ namespace ECS.Systems
             aPerception.DetectionRadiusPass = false;
             aPerception.HealthCheckPass = false;
             aPerception.LineOfSightPass = false;
+        }
+
+        private void HandleActorSpawned(ActorSpawnedEvent e)
+        {
+            var entityId = e.EntityId;
+            
+            if (!EcsUtils.HasCompInPool<AIControlledComponent>(_world, entityId))
+            {
+                DebCon.Info($"AI-controlled component not found on entity {entityId}", "AIPerceptionSystem");
+                return;
+            }
+                
+            // initialize with default values
+            if (!EcsUtils.HasCompInPool<AIPerceptionComponent>(_world, entityId, out var perceptionPool))
+            {
+                perceptionPool.Add(entityId);
+                DebCon.Log($"Added perception component to entity {entityId}", "AIPerceptionSystem");
+            }
+            
+            ref var aPerception = ref perceptionPool.Get(entityId);
+            ResetPerceptionData(ref aPerception);
+            DebCon.Log($"Entity {entityId} initialized with default perception values", "AIPerceptionSystem");
         }
     }
 }

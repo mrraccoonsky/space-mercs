@@ -42,6 +42,8 @@ namespace ECS.AI.States
             _currentStateType = initialState;
             _currentState = _states[initialState];
             _currentState.Enter();
+            
+            DebCon.Log($"Entity {context.EntityId} initialized in state {initialState}", "AIStateMachine");
         }
         
         public void Tick(ref InputComponent input, float dt)

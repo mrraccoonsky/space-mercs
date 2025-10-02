@@ -44,12 +44,18 @@ namespace Actor
         private Vector3 _lastOriginPos;
         private bool _isAiming;
         
-        [Inject] private IPoolService _poolService;
+        private IPoolService _poolService;
         
         public bool IsEnabled { get; private set; }
         public int EntityId { get; private set; }
         public EcsWorld World { get; private set; }
 
+        [Inject]
+        public void Construct(IPoolService poolService)
+        {
+            _poolService = poolService;
+        }
+        
         private void OnDisable()
         {
             if (_targetOrigin != null)
@@ -88,6 +94,12 @@ namespace Actor
             SyncEcsState();
         }
 
+        public void Reset()
+        {
+            _lastOriginPos = _targetOrigin.position;
+            _isAiming = false;
+        }
+        
         public void SyncEcsState()
         {
             // override transform component values
@@ -214,6 +226,8 @@ namespace Actor
             _targetOrigin = _poolService.Get<Transform>(targetOriginPrefab);
             _targetOrigin.position = _t.position + _t.forward * defaultTargetDistance;
             _lastOriginPos = _targetOrigin.position;
+            
+            // _targetOrigin.gameObject.SetActive(true);
         }
 
         private bool UpdateTargetOrigin(InputComponent aInput, bool isAttacking, float dt)

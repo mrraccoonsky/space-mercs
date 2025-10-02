@@ -18,6 +18,7 @@ namespace DI.Services
             var fx = _factory.Create(prefab, position, rotation);
             if (fx == null) return;
 
+            fx.gameObject.SetActive(true);
             fx.Play();
         }
     }

@@ -64,10 +64,10 @@ namespace ECS.Bridges
                 aiPool.Add(entityId);
                 DebCon.Log($"'{gameObject.name}' marked as AI-controlled", "AIActorBridge", gameObject);
                 
-                ref var aiControlled = ref aiPool.Get(entityId);
-                aiControlled.Bridge = this;
-                aiControlled.Agent = agent;
-                aiControlled.Config = config;
+                ref var aAI = ref aiPool.Get(entityId);
+                aAI.Bridge = this;
+                aAI.Agent = agent;
+                aAI.Config = config;
             }
             
             obstacleLayer = LayerMask.GetMask("Ground", "Obstacle");
@@ -99,7 +99,7 @@ namespace ECS.Bridges
             }
         }
         
-        public bool CheckLineOfSight(Vector3 from, Vector3 to, int target)
+        public bool CheckLineOfSight(Vector3 from, Vector3 to)
         {
             var aFrom = from + Vector3.up;
             var aTo = to + Vector3.up;

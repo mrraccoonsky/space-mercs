@@ -1,67 +1,50 @@
 ﻿using System.Collections.Generic;
+using Data.AI;
+using DI.Services;
 using UnityEngine;
 using ECS.AI.States;
 using ECS.Components;
 using ECS.Utils;
+using EventSystem;
 using Tools;
+using Zenject;
 
 namespace ECS.Systems
 {
     using Leopotam.EcsLite;
     
-    public class AIDecisionSystem : IEcsRunSystem, IEcsInitSystem
+    public class AIDecisionSystem : IEcsRunSystem, IEcsInitSystem, IEcsDestroySystem
     {
         private readonly EcsWorld _world;
-        private readonly EcsFilter _aiFilter;
+        private readonly IEventBusService _eventBus;
+        
+        private EcsFilter _aiFilter;
 
         private readonly Dictionary<int, AIStateMachine> _stateMachines = new();
         
-        public AIDecisionSystem(EcsWorld world)
+        public AIDecisionSystem(EcsWorld world, IEventBusService eventBus)
         {
             _world = world;
-            
+            _eventBus = eventBus;
+        }
+        
+        public void Init(IEcsSystems systems)
+        {
             _aiFilter = _world.Filter<TransformComponent>()
                 .Inc<InputComponent>()
                 .Inc<AIControlledComponent>()
                 .Inc<AIPerceptionComponent>()
                 .Inc<AIBehaviorComponent>()
                 .End();
+            
+            _eventBus.Subscribe<ActorSpawnedEvent>(HandleActorSpawned);
         }
         
-        public void Init(IEcsSystems systems)
+        public void Destroy(IEcsSystems systems)
         {
-            // init input
-            var filter = _world.Filter<AIControlledComponent>().Inc<ActorComponent>().End();
-            foreach (var entity in filter)
-            {
-                if (!EcsUtils.HasCompInPool<InputComponent>(_world, entity, out var inputPool))
-                {
-                    inputPool.Add(entity);
-                    DebCon.Log($"Added input component to entity {entity}", "AIDecisionSystem");
-                }
-            }
+            DebCon.Warn("Destroying AIDecisionSystem...");
             
-            DebCon.Log($"Initialized with {_aiFilter.GetEntitiesCount()} AI entities", "AIDecisionSystem");
-            
-            // init state machines for each AI entity
-            foreach (var entity in _aiFilter)
-            {
-                var context = new AIContext(entity, _world);
-                var stateMachine = new AIStateMachine(context);
-                
-                stateMachine.RegisterState(AIBehaviorState.Idle, new IdleState(context));
-                stateMachine.RegisterState(AIBehaviorState.Patrol, new PatrolState(context));
-                stateMachine.RegisterState(AIBehaviorState.Chase, new ChaseState(context));
-                stateMachine.RegisterState(AIBehaviorState.Attack, new AttackState(context));
-                stateMachine.RegisterState(AIBehaviorState.Dead, new DeadState(context));
-                
-                // init with current state
-                var behaviorPool = _world.GetPool<AIBehaviorComponent>();
-                ref var aBehavior = ref behaviorPool.Get(entity);
-                stateMachine.Init(aBehavior.CurrentState);
-                
-                _stateMachines[entity] = stateMachine;
-            }
+            _eventBus.Unsubscribe<ActorSpawnedEvent>(HandleActorSpawned);
         }
         
         public void Run(IEcsSystems systems)
@@ -133,7 +116,7 @@ namespace ECS.Systems
                     }
                 
                     // switch to chase if target is within chase range
-                    if (aBehavior.StateTimer > 1f)
+                    if (aBehavior.CurrentState == AIBehaviorState.Idle || aBehavior.StateTimer > aBehavior.AttackCooldown)
                     {
                         stateMachine.SwitchState(AIBehaviorState.Chase);
                     }
@@ -156,6 +139,71 @@ namespace ECS.Systems
                         stateMachine.SwitchState(AIBehaviorState.Idle);
                         break;
                 }
+            }
+        }
+        
+        private void HandleActorSpawned(ActorSpawnedEvent e)
+        {
+            var entityId = e.EntityId;
+            
+            if (!EcsUtils.HasCompInPool<AIControlledComponent>(_world, entityId, out var aiPool))
+            {
+                DebCon.Info($"AI-controlled component not found on entity {entityId}", "AIDecisionSystem");
+                return;
+            }
+            
+            if (!EcsUtils.HasCompInPool<InputComponent>(_world, entityId, out var inputPool))
+            {
+                inputPool.Add(entityId);
+                DebCon.Log($"Added input component to entity {entityId}", "AIDecisionSystem");
+            }
+            
+            if (!EcsUtils.HasCompInPool<AIBehaviorComponent>(_world, entityId, out var behaviorPool))
+            {
+                behaviorPool.Add(entityId);
+                DebCon.Log($"Added behavior component to entity {entityId}", "AIDecisionSystem");
+            }
+            
+            ref var aAI = ref aiPool.Get(entityId);
+            var cfg = aAI.Config;
+            
+            // init with current state
+            ref var aBehavior = ref behaviorPool.Get(entityId);
+            aBehavior.CurrentState = AIBehaviorState.Idle;
+            aBehavior.StateTimer = 0f;
+            LoadBehaviorConfig(ref aBehavior, cfg);
+            
+            var context = new AIContext(entityId, _world);
+            var stateMachine = new AIStateMachine(context);
+            
+            stateMachine.RegisterState(AIBehaviorState.Idle, new IdleState(context));
+            stateMachine.RegisterState(AIBehaviorState.Patrol, new PatrolState(context));
+            stateMachine.RegisterState(AIBehaviorState.Chase, new ChaseState(context));
+            stateMachine.RegisterState(AIBehaviorState.Attack, new AttackState(context));
+            stateMachine.RegisterState(AIBehaviorState.Dead, new DeadState(context));
+            stateMachine.Init(aBehavior.CurrentState);
+            
+            _stateMachines[entityId] = stateMachine;
+            DebCon.Log($"Entity {entityId} initialized", "AIDecisionSystem");
+        }
+        
+        private void LoadBehaviorConfig(ref AIBehaviorComponent aBehavior, AIConfig cfg)
+        {
+            if (cfg != null)
+            {
+                aBehavior.DetectionRadius = cfg.detectionRadius;
+                aBehavior.AttackRange = cfg.attackRange;
+                aBehavior.AttackCooldown = cfg.attackCooldown;
+                aBehavior.RandomChaseAttackMinTime = cfg.randomChaseAttackMinTime;
+                aBehavior.RandomChaseAttackMaxTime = cfg.randomChaseAttackMaxTime;
+            }
+            else
+            {
+                aBehavior.DetectionRadius = 10f;
+                aBehavior.AttackRange = 1.5f;
+                aBehavior.AttackCooldown = 1f;
+                aBehavior.RandomChaseAttackMinTime = 1f;
+                aBehavior.RandomChaseAttackMaxTime = 3f;
             }
         }
     }

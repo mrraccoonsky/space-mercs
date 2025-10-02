@@ -1,8 +1,10 @@
+using Core.Camera;
 using UnityEngine;
 using Data;
 using DI.Factories;
 using DI.Services;
 using ECS.Core;
+using Tools;
 
 namespace DI.Installers
 {
@@ -12,6 +14,7 @@ namespace DI.Installers
     public class ProjectInstaller : MonoInstaller
     {
         [SerializeField] private GlobalVariablesConfig globalVariablesConfig;
+        [SerializeField] private CameraController cameraController;
         
         private EcsWorld _world; // is it proper to store it here?
         
@@ -26,22 +29,32 @@ namespace DI.Installers
             Container.BindInstance(globalVariablesConfig).AsSingle();
             
             // factories
+            Container.Bind<IActorFactory>().To<ActorFactory>().AsSingle();
             Container.Bind<IProjectileFactory>().To<ProjectileFactory>().AsSingle();
             Container.Bind<IFxFactory>().To<FxFactory>().AsSingle();
             
             // services
             Container.Bind<IPoolService>().To<PoolService>().AsSingle();
+            Container.Bind<IActorSpawnService>().To<ActorSpawnService>().AsSingle();
             Container.Bind<IProjectileService>().To<ProjectileService>().AsSingle();
             Container.Bind<IFXService>().To<FxService>().AsSingle();
             
             // todo: make it changeable in runtime
-            Container.Bind<IInputService>().To<KeyboardMouseInputService>().AsSingle(); 
+            Container.Bind<IInputService>().To<KeyboardMouseInputService>().AsSingle();
+            
+            // singletons
+            Container.BindInstance(cameraController).AsSingle();
+            
+            // event bus as SO resource
+            Container.Bind<IEventBusService>().To<EventBusService>().FromScriptableObjectResource("EventBusService")
+                .AsSingle()
+                .NonLazy();
         }
 
         private void OnDestroy()
         {
+            DebCon.Warn("Destroying ProjectInstaller...");
             Container.UnbindAll();
-            
             _world?.Destroy();
         }
     }

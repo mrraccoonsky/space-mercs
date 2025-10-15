@@ -12,7 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4ab9ac9a19d4897aed165cbd0e68ca0, type: 3}
   m_Name: '[Player] Rifle'
   m_EditorClassIdentifier: Assembly-CSharp::Data.Actor.ActorConfig
-  speed: 3
+  maxHealth: 50
+  hitCooldown: 0.5
+  speed: 3.5
   jumpHeight: 1.5
   jumpDelay: 0.1
   jumpCooldown: 0.1
@@ -24,18 +26,4 @@ MonoBehaviour:
   targetMoveSpeed: 50
   rotationSpeed: 12
   aimTowardsAttackDirection: 0
-  attackCooldown: 0.8
-  holdBurstTransform: 0
-  burstCount: 2
-  burstCooldown: 0.2
-  scatterAngle: 0
-  scatterType: 0
-  projectilePrefab: {fileID: 3905571746805792301, guid: 8aa46c1d1b7dd114685432a73ad06eba, type: 3}
-  projectileCount: 3
-  projectileCooldown: 0.05
-  projectileLifetime: 0.35
-  projectileSpeed: 20
-  projectilePenetrationCount: 0
-  canHitOnCooldown: 0
-  maxHealth: 50
-  hitCooldown: 0.5
+  weaponCfg: {fileID: 11400000, guid: 0b2153aacc801d44ab3d3e12cd6c726f, type: 2}

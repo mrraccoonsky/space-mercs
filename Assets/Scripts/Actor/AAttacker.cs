@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
+using Data;
 using Data.Actor;
-using Data.Projectile;
+using Data.Weapon;
 using DI.Services;
 using ECS.Components;
 using ECS.Utils;
@@ -9,72 +10,41 @@ using Tools;
 namespace Actor
 {
     using Leopotam.EcsLite;
+    using NaughtyAttributes;
     using Zenject;
-    
-    public enum OriginCycleMode
-    {
-        None,
-        Reset,
-        PingPong
-    }
-
-    public enum ScatterType
-    {
-        None,
-        Random,
-        Cone
-    }
     
     public class AAttacker : MonoBehaviour, IActorModule
     {
-        [Header("Attack:")]
-        [SerializeField] private float attackCooldown = 0.6f;
-        
-        [Space]
-        [SerializeField] private bool holdBurstTransform;
-        [SerializeField] private int burstCount = 2;
-        [SerializeField] private float burstCooldown = 0.2f;
+        [SerializeField] private WeaponConfig weapon;
+        [SerializeField] private Transform originsRoot; // todo: make it changeable
 
-        [Space]
-        [SerializeField] private float scatterAngle;
-        [SerializeField] private ScatterType scatterType = ScatterType.None;
+        [ReadOnly, SerializeField] private GlobalTag globalTag;
         
         [Space]
-        [SerializeField] private GameObject projectilePrefab;
-        [SerializeField] private int projectileCount = 3;
-        [SerializeField] private float projectileCooldown = 0.05f;
-        [SerializeField] private float projectileLifetime = 0.5f;
-        [SerializeField] private float projectileSpeed = 15f;
-        [SerializeField] private int projectilePenetrationCount = 1;
-        [SerializeField] private bool canHitOnCooldown;
+        [ReadOnly, SerializeField] private Transform[] origins;
+        [ReadOnly, SerializeField] private int currentOriginIndex;
+        [ReadOnly, SerializeField] private int currentCycleDirection = 1;
         
         [Space]
-        [SerializeField] private Transform originsRoot;
-        [SerializeField] private OriginCycleMode cycleMode = OriginCycleMode.None;
+        [ReadOnly, SerializeField] private Vector3 holdSpawnPos;
+        [ReadOnly, SerializeField] private Quaternion holdSpawnRot;
         
-        private Transform[] _origins;
-        private int _currentOriginIndex;
-        private int _currentCycleDirection = 1;
+        [Space]
+        [ReadOnly, SerializeField] private float scatterAngle;
+        [ReadOnly, SerializeField] private float attackCooldownTimer;
+        [ReadOnly, SerializeField] private float projectileCooldownTimer;
+        [ReadOnly, SerializeField] private float burstCooldownTimer;
+        [ReadOnly, SerializeField] private int projectileCount;
+        [ReadOnly, SerializeField] private int burstCount;
         
-        private Vector3 _holdSpawnPos;
-        private Quaternion _holdSpawnRot;
-        
-        private float _attackCooldownTimer;
-        
-        private int _burstCount;
-        private float _burstCooldownTimer;
-        private float _scatterAngle;
-        
-        private int _projectileCount;
-        private float _projectileCooldownTimer;
-        
-        private bool _isAttacking;
-        private bool _isAttackTriggered;
+        [ReadOnly, SerializeField] private bool isAttacking;
+        [ReadOnly, SerializeField] private bool isAttackTriggered;
         
         public bool IsEnabled { get; private set; }
         public int EntityId { get; private set; }
         public EcsWorld World { get; private set; }
-        
+
+        [Inject] private IPoolService _poolService;
         [Inject] private IProjectileService _projectileService;
         
         public void Init(ActorConfig cfg, int entityId, EcsWorld world)
@@ -85,66 +55,66 @@ namespace Actor
             EntityId = entityId;
             World = world;
             
+            // init config
+            if (cfg == null)
+            {
+                DebCon.Err($"Actor config is null on {gameObject.name}!", "AAttacker", gameObject);
+                return;
+            }
+            
+            weapon = cfg.weaponCfg;
+            if (weapon == null)
+            {
+                DebCon.Err($"Weapon config is null on {gameObject.name}!", "AAttacker", gameObject);
+                return;
+            }
+            
             // todo: make it switchable
-            _origins = new Transform[originsRoot.childCount];
+            origins = new Transform[originsRoot.childCount];
             for (var i = 0; i < originsRoot.childCount; i++)
             {
                 var child = originsRoot.GetChild(i);
-                _origins[i] = child;
-            }
-            
-            // init config
-            if (cfg)
-            {
-                attackCooldown = cfg.attackCooldown;
-                
-                holdBurstTransform = cfg.holdBurstTransform;
-                burstCount = cfg.burstCount;
-                burstCooldown = cfg.burstCooldown;
-                
-                scatterAngle = cfg.scatterAngle;
-                scatterType = cfg.scatterType;
-                
-                projectilePrefab = cfg.projectilePrefab;
-                projectileCount = cfg.projectileCount;
-                projectileCooldown = cfg.projectileCooldown;
-                projectileLifetime = cfg.projectileLifetime;
-                projectileSpeed = cfg.projectileSpeed;
-                projectilePenetrationCount = cfg.projectilePenetrationCount;
-                canHitOnCooldown = cfg.canHitOnCooldown;
+                origins[i] = child;
             }
             
             // add component to pool
-            var attackPool = world.GetPool<AttackComponent>();
-            attackPool.Add(entityId);
+            var attackerPool = world.GetPool<AttackerComponent>();
+            attackerPool.Add(entityId);
             
             SyncEcsState();
         }
 
         public void Reset()
         {
-            _holdSpawnPos = Vector3.zero;
-            _holdSpawnRot = Quaternion.identity;
+            if (!enabled) return;
             
-            _attackCooldownTimer = 0f;
+            holdSpawnPos = Vector3.zero;
+            holdSpawnRot = Quaternion.identity;
+            
+            attackCooldownTimer = 0f;
          
-            _burstCount = 0;
-            _burstCooldownTimer = 0f;
-            _scatterAngle = 0f;
+            burstCount = 0;
+            burstCooldownTimer = 0f;
+            scatterAngle = 0f;
         
-            _projectileCount = 0;
-            _projectileCooldownTimer = 0f;
+            projectileCount = 0;
+            projectileCooldownTimer = 0f;
 
-            _isAttacking = false;
-            _isAttackTriggered = false;
+            isAttacking = false;
+            isAttackTriggered = false;
+        }
+        
+        public void SetTag(GlobalTag globalTag)
+        {
+            this.globalTag = globalTag;
         }
         
         public void SyncEcsState()
         {
-            if (EcsUtils.HasCompInPool<AttackComponent>(World, EntityId, out var attackPool))
+            if (EcsUtils.HasCompInPool<AttackerComponent>(World, EntityId, out var attackerPool))
             {
-                ref var aAttack = ref attackPool.Get(EntityId);
-                aAttack.IsAttacking = _isAttacking;
+                ref var aAttack = ref attackerPool.Get(EntityId);
+                aAttack.IsAttacking = isAttacking;
             }
         }
         
@@ -166,36 +136,36 @@ namespace Actor
             }
             
             ref var aInput = ref inputPool.Get(EntityId);
-            HandleAttackLogic(aInput, dt);
+            HandleAttack(aInput, dt);
         }
 
-        private void HandleAttackLogic(InputComponent input, float dt)
+        private void HandleAttack(InputComponent input, float dt)
         {
             // main attack cooldown timer
-            if (_attackCooldownTimer > 0f)
+            if (attackCooldownTimer > 0f)
             {
-                _attackCooldownTimer -= dt;
+                attackCooldownTimer -= dt;
                 
-                if (_attackCooldownTimer <= 0f)
+                if (attackCooldownTimer <= 0f)
                 {
-                    _attackCooldownTimer = 0f;
-                    _burstCount = 0;
+                    attackCooldownTimer = 0f;
+                    burstCount = 0;
                 }
             }
             
             // single burst (with multiple projectiles) cooldown timer
-            _burstCooldownTimer -= dt;
+            burstCooldownTimer -= dt;
 
-            if (_burstCooldownTimer <= 0f)
+            if (burstCooldownTimer <= 0f)
             {
-                _burstCooldownTimer = 0f;
+                burstCooldownTimer = 0f;
             }
             
             // update origins root positions and rotation (hold logics)
-            if (_holdSpawnPos != Vector3.zero && _holdSpawnRot != Quaternion.identity)
+            if (holdSpawnPos != Vector3.zero && holdSpawnRot != Quaternion.identity)
             {
-                originsRoot.transform.position = _holdSpawnPos;
-                originsRoot.transform.rotation = _holdSpawnRot;
+                originsRoot.transform.position = holdSpawnPos;
+                originsRoot.transform.rotation = holdSpawnRot;
             }
             else
             {
@@ -203,153 +173,249 @@ namespace Actor
                 originsRoot.transform.localRotation = Quaternion.identity;
             }
 
-            if (_isAttackTriggered)
+            if (!isAttackTriggered)
+            {
+                if (weapon == null)
+                {
+                    DebCon.Warn("Weapon is null", "AAttacker", gameObject);
+                    return;
+                }
+                
+                // attack input check
+                var shotCountPass = burstCount < weapon.burstCount;
+                var shotCooldownPass = burstCooldownTimer <= 0f;
+                
+                if (input.IsAttackHeld && shotCountPass && shotCooldownPass)
+                {
+                    isAttackTriggered = true;
+                }
+            }
+            else
             {
                 // interval between shots in single burst timer
-                _projectileCooldownTimer -= dt;
+                projectileCooldownTimer -= dt;
 
-                if (_projectileCooldownTimer <= 0f)
+                if (projectileCooldownTimer <= 0f)
                 {
-                    _projectileCooldownTimer = 0f;
+                    projectileCooldownTimer = 0f;
                 }
 
                 // end of single attack (burst)
-                if (_projectileCount >= projectileCount)
+                if (projectileCount >= weapon.projectileCount)
                 {
-                    _isAttackTriggered = false;
-                    _burstCooldownTimer = burstCooldown;
-                    _projectileCooldownTimer = 0f;
-                    _burstCount++;
-                    _scatterAngle = 0f;
-                    _projectileCount = 0;
-                    
-                    // reset hold spawn position and rotation
-                    _holdSpawnPos = Vector3.zero;
-                    _holdSpawnRot = Quaternion.identity;
+                    ResetBurst();
                     
                     // set attack cooldown timer if it's not set
-                    if (_attackCooldownTimer == 0f)
+                    if (attackCooldownTimer == 0f)
                     {
-                        _attackCooldownTimer = attackCooldown;
+                        attackCooldownTimer = weapon.attackCooldown;
                     }
                     // add calculated attack cooldown based on performed bursts
+                    // todo: check if calculated correctly. have some issues on multi-shots ???
                     else
                     {
-                        var shotsLeft = _burstCount;
-                        _attackCooldownTimer = attackCooldown / shotsLeft;
+                        var shotsLeft = burstCount;
+                        attackCooldownTimer = weapon.attackCooldown / shotsLeft;
                     }
                 }
                 
                 // projectile spawn
-                var shotCountPass = _burstCount < burstCount;
-                var shotCooldownPass = _burstCooldownTimer <= 0f;
-                var shotIntervalPass = _projectileCooldownTimer <= 0f;
+                var countPass = burstCount < weapon.burstCount;
+                var burstCooldownPass = burstCooldownTimer <= 0f;
+                var projectileCooldownPass = projectileCooldownTimer <= 0f;
+                
+                // wait until the conditions are met
+                if (!countPass || !burstCooldownPass || !projectileCooldownPass) return;
 
-                if (!shotCountPass || !shotCooldownPass || !shotIntervalPass) return;
-
-                if (_projectileCount == 0 && holdBurstTransform)
+                // keep first shot transform for transform holding
+                if (projectileCount == 0 && weapon.holdBurstTransform)
                 {
-                    _holdSpawnPos = originsRoot.transform.position;
-                    _holdSpawnRot = originsRoot.transform.rotation;
-                } 
-                
-                _projectileCount++;
-                _projectileCooldownTimer = projectileCooldown;
-                
-                // scattering
-                var angleStep = scatterAngle / Mathf.Max(1, _origins.Length - 1);
-                var initAngle = 0f;
+                    holdSpawnPos = originsRoot.transform.position;
+                    holdSpawnRot = originsRoot.transform.rotation;
+                }
 
-                if (scatterType == ScatterType.Cone && _origins.Length > 1)
-                    initAngle = -angleStep * 2f;
+                // handle single- or multi-shot based on projectile cooldown
+                var singleStep = GetScatterSingleStep();
+                var initAngle = GetScatterInitAngle(singleStep);
+                var isSingleShot = weapon.projectileCooldown > 0f;
                 
-                else if (scatterType == ScatterType.Random)
-                    initAngle = Random.Range(-angleStep * 2f, angleStep * 2f);
-                
-                _scatterAngle = initAngle;
-                
-                // cycle for multiple origins
-                if (cycleMode == OriginCycleMode.None)
+                if (isSingleShot)
                 {
-                    foreach (var o in _origins)
-                    {
-                        SpawnProjectile(o);
-
-                        if (scatterType == ScatterType.Cone)
-                            _scatterAngle += angleStep;
-                    }
+                    HandleSingleShot(initAngle, singleStep);
                 }
                 else
                 {
-                    SpawnProjectile(_origins[_currentOriginIndex]);
-                    switch (cycleMode)
+                    HandleMultiShot(initAngle, singleStep);
+                }
+            }
+        }
+        
+        private void ResetBurst()
+        {
+            if (weapon == null) return;
+            
+            isAttackTriggered = false;
+            burstCooldownTimer = weapon.burstCooldown;
+            projectileCooldownTimer = 0f;
+            burstCount++;
+            scatterAngle = 0f;
+            projectileCount = 0;
+            
+            holdSpawnPos = Vector3.zero;
+            holdSpawnRot = Quaternion.identity;
+
+            // switch direction for single origin cone scatter with ping pong cycle mode (who needs that anyways?)
+            if (origins.Length == 1 && weapon.scatterType == ScatterType.Cone && weapon.originCycleMode == OriginCycleMode.PingPong)
+            {
+                currentCycleDirection *= -1;
+            }
+        }
+        
+        private void HandleSingleShot(float initAngle, float singleStep)
+        {
+            if (projectileCount == 0)
+            {
+                scatterAngle = initAngle;
+            }
+            
+            projectileCount++;
+            projectileCooldownTimer = weapon.projectileCooldown;
+            
+            if (weapon.originCycleMode == OriginCycleMode.None || origins.Length == 1 || weapon.burstCooldown <= 0f)
+            {
+                foreach (var o in origins)
+                {
+                    SpawnProjectile(o);
+
+                    if (weapon.scatterType == ScatterType.Random)
                     {
-                        case OriginCycleMode.Reset:
-                            _currentOriginIndex++;
+                        scatterAngle = GetScatterInitAngle(singleStep);
+                    }
+                }
+                
+                UpdateCurrentScatterAngle(singleStep);
+            }
+            else
+            {
+                SpawnProjectile(origins[currentOriginIndex]);
+                UpdateCurrentScatterAngle(singleStep);
 
-                            if (scatterType == ScatterType.Cone)
-                                _scatterAngle += angleStep;
+                if (weapon.switchAfterEachShot || projectileCount >= weapon.projectileCount)
+                {
+                    CycleOrigins(weapon.originCycleMode);
+                }
+            }
+        }
 
-                            if (_currentOriginIndex >= _origins.Length)
-                            {
-                                _currentOriginIndex = 0;
+        private void HandleMultiShot(float initAngle, float singleStep)
+        {
+            projectileCount = weapon.projectileCount;
+            projectileCooldownTimer = 0f;
 
-                                if (scatterType == ScatterType.Cone)
-                                    _scatterAngle = initAngle;
-                            }
-                            
-                            break;
-                        case OriginCycleMode.PingPong:
-                            _currentOriginIndex += _currentCycleDirection;
-                            
-                            if (scatterType == ScatterType.Cone)
-                                _scatterAngle += angleStep * _currentCycleDirection;
-
-                            if (_currentOriginIndex >= _origins.Length)
-                            {
-                                _currentOriginIndex = _origins.Length - 1;
-                                _currentCycleDirection *= -1;
-                                
-                                if (scatterType == ScatterType.Cone)
-                                    _scatterAngle = initAngle * -1;
-                            }
-                            else if (_currentOriginIndex < 0)
-                            {
-                                _currentOriginIndex = 0;
-                                _currentCycleDirection *= -1;
-                                
-                                if (scatterType == ScatterType.Cone)
-                                    _scatterAngle = initAngle;
-                            }
-                            break;
+            if (weapon.originCycleMode == OriginCycleMode.None || origins.Length == 1)
+            {
+                foreach (var o in origins)
+                {
+                    scatterAngle = initAngle;
+                    
+                    for (var i = 0; i < weapon.projectileCount; i++)
+                    {
+                        SpawnProjectile(o);
+                        UpdateCurrentScatterAngle(singleStep);
                     }
                 }
             }
             else
             {
-                // attack input check
-                var shotCountPass = _burstCount < burstCount;
-                var shotCooldownPass = _burstCooldownTimer <= 0f;
-                
-                if (input.IsAttackHeld && shotCountPass && shotCooldownPass)
+                scatterAngle = initAngle;
+                    
+                for (var i = 0; i < weapon.projectileCount; i++)
                 {
-                    _isAttackTriggered = true;
+                    SpawnProjectile(origins[currentOriginIndex]);
+                    UpdateCurrentScatterAngle(singleStep);
+                }
+                
+                CycleOrigins(weapon.originCycleMode);
+            }
+        }
+        
+        private float GetScatterSingleStep()
+        {
+            if (weapon == null) return 0f;
+            
+            return weapon.scatterAngle / Mathf.Max(1, weapon.projectileCount - 1);
+        }
+        
+        private float GetScatterInitAngle(float signleStep)
+        {
+            if (weapon == null) return 0f;
+            
+            return weapon.scatterType switch
+            {
+                ScatterType.Cone => -signleStep * 0.5f * (weapon.projectileCount - 1) * currentCycleDirection,
+                ScatterType.Random => Random.Range(-weapon.scatterAngle * 0.5f, weapon.scatterAngle * 0.5f),
+                _ => 0f
+            };
+        }
+
+        private void UpdateCurrentScatterAngle(float singleStep)
+        {
+            if (weapon == null) return;
+            
+            if (weapon.scatterType == ScatterType.Cone)
+            {
+                scatterAngle += singleStep * currentCycleDirection;
+            }
+            else
+            {
+                scatterAngle = GetScatterInitAngle(singleStep);
+            }
+        }
+        
+        private void CycleOrigins(OriginCycleMode cycleMode)
+        {
+            if (origins.Length <= 1) return;
+            
+            if (cycleMode == OriginCycleMode.Reset)
+            {
+                currentOriginIndex++;
+
+                if (currentOriginIndex >= origins.Length)
+                {
+                    currentOriginIndex = 0;
+                }
+            }
+            else if (cycleMode == OriginCycleMode.PingPong)
+            {
+                currentOriginIndex += currentCycleDirection;
+
+                if (currentOriginIndex >= origins.Length)
+                {
+                    currentOriginIndex = origins.Length - 1;
+                    currentCycleDirection *= -1;
+                }
+                else if (currentOriginIndex < 0)
+                {
+                    currentOriginIndex = 0;
+                    currentCycleDirection *= -1;
                 }
             }
         }
         
         private void SpawnProjectile(Transform origin)
         {
-            var data = new ProjectileData(
-                prefab: projectilePrefab,
-                tag: gameObject.tag,
-                speed: projectileSpeed,
-                lifetime: projectileLifetime,
-                penetrationCount: projectilePenetrationCount,
-                canHitOnCooldown: canHitOnCooldown);
-
-            var rotation = Quaternion.Euler(origin.eulerAngles + Vector3.up * _scatterAngle);
-            _projectileService.Spawn(data, origin.position, rotation);
+            if (weapon == null)
+            {
+                DebCon.Warn("Weapon is null", "AAttacker", gameObject);
+                return;
+            }
+            
+            var rot = Quaternion.Euler(origin.eulerAngles + Vector3.up * scatterAngle);
+            var pos = origins.Length > 1 && weapon.scatterType == ScatterType.Cone && weapon.originCycleMode == OriginCycleMode.None
+                ? transform.position + rot * origin.localPosition
+                : origin.position;
+            
+            _projectileService.SpawnProjectile(weapon, globalTag, pos, rot);
         }
     }
 }

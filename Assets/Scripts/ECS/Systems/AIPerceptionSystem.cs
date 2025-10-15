@@ -124,7 +124,7 @@ namespace ECS.Systems
             ref var aActor = ref actorPool.Get(aiEntityId);
 
             var pos = aTransform.Position;
-            var tag = aActor.Bridge.gameObject.tag;
+            var tag = aActor.Tag;
             
             var minDistance = float.MaxValue;
             var targetId = -1;
@@ -138,9 +138,8 @@ namespace ECS.Systems
                 if (distance > minDistance) continue;
                 
                 // ignore own tag
-                // todo: use inner (fraction) tag instead of gameObject based one
                 ref var aTargetActor = ref actorPool.Get(entity);
-                if (aTargetActor.Bridge.gameObject.CompareTag(tag)) continue;
+                if (aTargetActor.Tag == tag) continue;
 
                 // ignore dead entities
                 if (EcsUtils.HasCompInPool<HealthComponent>(_world, entity, out var healthPool))

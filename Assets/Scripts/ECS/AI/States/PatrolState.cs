@@ -12,6 +12,8 @@ namespace ECS.AI.States
         private Vector3 _direction;
         private float _cooldownTimer;
         
+        private readonly RaycastHit[] _hits = new RaycastHit[1];
+        
         public override void Enter()
         {
             base.Enter();
@@ -97,8 +99,9 @@ namespace ECS.AI.States
                 var raycastPos = position + randomDir;
                 raycastPos.y += 10f;
 
-                if (!Physics.Raycast(raycastPos, Vector3.down, out var hit, 20f, ~0)) continue;
-                _targetPos = hit.point;
+                var ray = new Ray(raycastPos, Vector3.down);
+                if (Physics.RaycastNonAlloc(ray, _hits, 20f, ~0) == 0) continue;
+                _targetPos = _hits[0].point;
                 return;
             }
             

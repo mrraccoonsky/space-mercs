@@ -1,5 +1,4 @@
 using UnityEngine;
-using Data.Projectile;
 using DI.Services;
 using ECS.Bridges;
 using Tools;
@@ -19,9 +18,9 @@ namespace DI.Factories
             _poolService = poolService;
         }
 
-        public ProjectileBridge Create(ProjectileData data, Vector3 position, Quaternion rotation)
+        public ProjectileBridge CreateProjectile(GameObject prefab, Vector3 position, Quaternion rotation)
         {
-            var bridge = _poolService.Get<ProjectileBridge>(data.prefab);
+            var bridge = _poolService.Get<ProjectileBridge>(prefab);
             if (bridge == null)
             {
                 DebCon.Err("Failed to create projectile bridge", "ProjectileFactory");
@@ -32,6 +31,22 @@ namespace DI.Factories
             _container.Inject(bridge);
             
             bridge.transform.SetPositionAndRotation(position, rotation);
+            return bridge;
+        }
+
+        public ExplosionBridge CreateExplosion(GameObject prefab, Vector3 position)
+        {
+            var bridge = _poolService.Get<ExplosionBridge>(prefab);
+            if (bridge == null)
+            {
+                DebCon.Err("Failed to create explosion bridge", "ProjectileFactory");
+                return null;
+            }
+            
+            // inject dependencies at runtime
+            // _container.Inject(bridge);
+            
+            bridge.transform.SetPositionAndRotation(position, Quaternion.identity);
             return bridge;
         }
     }

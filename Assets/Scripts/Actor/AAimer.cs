@@ -10,6 +10,7 @@ using Tools;
 namespace Actor
 {
     using Leopotam.EcsLite;
+    using NaughtyAttributes;
     using Zenject;
     
     [Serializable]
@@ -27,16 +28,14 @@ namespace Actor
     
     public class AAimer : MonoBehaviour, IActorModule
     {
-        [Header("Target Origin:")]
         [SerializeField] private GameObject targetOriginPrefab;
-        [SerializeField] private float defaultTargetDistance = 1f;
-        [SerializeField] private float targetMoveSpeed = 50f; 
-        
-        [Header("Rotation:")]
-        [SerializeField] private float rotationSpeed = 10f;
-        [SerializeField] private bool aimTowardsAttackDirection;
-
         [SerializeField] private ConstraintData[] constraintData;
+        
+        [Space]
+        [ReadOnly, SerializeField] private float defaultTargetDistance;
+        [ReadOnly, SerializeField] private float targetMoveSpeed; 
+        [ReadOnly, SerializeField] private float rotationSpeed;
+        [ReadOnly, SerializeField] private bool aimTowardsAttackDirection;
         
         private Transform _t;
         private Transform _targetOrigin;
@@ -72,30 +71,35 @@ namespace Actor
             EntityId = entityId;
             World = world;
             
+            // init config
+            if (cfg == null)
+            {
+                DebCon.Err($"Actor config is null on {gameObject.name}!", "AAimer", gameObject);
+                return;
+            }
+            
+            defaultTargetDistance = cfg.defaultTargetDistance;
+            targetMoveSpeed = cfg.targetMoveSpeed;
+                
+            rotationSpeed = cfg.rotationSpeed;
+            aimTowardsAttackDirection = cfg.aimTowardsAttackDirection;
+            
             _t = transform;
             
             GetTargetOrigin();
             InitAimConstraints();
-
-            // init config
-            if (cfg)
-            {
-                defaultTargetDistance = cfg.defaultTargetDistance;
-                targetMoveSpeed = cfg.targetMoveSpeed;
-                
-                rotationSpeed = cfg.rotationSpeed;
-                aimTowardsAttackDirection = cfg.aimTowardsAttackDirection;
-            }
             
             // add component to pool
-            var aimPool = World.GetPool<AimComponent>();
-            aimPool.Add(EntityId);
+            var aimerPool = World.GetPool<AimerComponent>();
+            aimerPool.Add(EntityId);
             
             SyncEcsState();
         }
 
         public void Reset()
         {
+            if (!enabled) return;
+            
             _lastOriginPos = _targetOrigin.position;
             _isAiming = false;
         }
@@ -109,9 +113,9 @@ namespace Actor
                 aTransform.Rotation = _t.rotation;
             }
 
-            if (EcsUtils.HasCompInPool<AimComponent>(World, EntityId, out var aimPool))
+            if (EcsUtils.HasCompInPool<AimerComponent>(World, EntityId, out var aimerPool))
             {
-                ref var aAim = ref aimPool.Get(EntityId);
+                ref var aAim = ref aimerPool.Get(EntityId);
                 aAim.TargetOrigin = _targetOrigin;
                 aAim.AimPosition = _targetOrigin.position;
                 aAim.AimDirection = (_targetOrigin.position - _t.position).normalized;
@@ -149,9 +153,9 @@ namespace Actor
             
             // aim towards attack direction
             var isAttacking = false;
-            if (EcsUtils.HasCompInPool<AttackComponent>(World, EntityId, out var attackPool))
+            if (EcsUtils.HasCompInPool<AttackerComponent>(World, EntityId, out var attackerPool))
             {
-                ref var aAttack = ref attackPool.Get(EntityId);
+                ref var aAttack = ref attackerPool.Get(EntityId);
                 isAttacking = aimTowardsAttackDirection && (aAttack.IsAttacking || aInput.IsAttackHeld);
             }
             
@@ -224,7 +228,7 @@ namespace Actor
         private void GetTargetOrigin()
         {
             _targetOrigin = _poolService.Get<Transform>(targetOriginPrefab);
-            _targetOrigin.position = _t.position + _t.forward * defaultTargetDistance;
+            _targetOrigin.position = _t.position + _t.forward.normalized * defaultTargetDistance;
             _lastOriginPos = _targetOrigin.position;
             
             // _targetOrigin.gameObject.SetActive(true);

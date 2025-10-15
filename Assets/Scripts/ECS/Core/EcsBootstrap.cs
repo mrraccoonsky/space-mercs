@@ -12,7 +12,7 @@ namespace ECS.Core
     public class EcsBootstrap
     {
         private readonly EcsWorld _world;
-        private readonly GlobalVariablesConfig _config;
+        private readonly GlobalVarsConfig _config;
         private readonly IEventBusService _eventBus;
         private readonly IInputService _inputService;
         private readonly IProjectileService _projectileService;
@@ -24,7 +24,7 @@ namespace ECS.Core
         {
             _world = container.Resolve<EcsWorld>();
             
-            _config = container.Resolve<GlobalVariablesConfig>();
+            _config = container.Resolve<GlobalVarsConfig>();
             _eventBus = container.Resolve<IEventBusService>();
             _inputService = container.Resolve<IInputService>();
             _projectileService = container.Resolve<IProjectileService>();

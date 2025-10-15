@@ -9,6 +9,40 @@ namespace DI.Services
         private readonly Dictionary<GameObject, Queue<GameObject>> _pools = new();
         private readonly Dictionary<GameObject, GameObject> _poolRoots = new();
 
+        public void Init(GameObject prefab, int count)
+        {
+            if (prefab == null)
+            {
+                DebCon.Err("Prefab is null", "PoolService");
+                return;
+            }
+
+            if (_pools.TryGetValue(prefab, out var queue))
+            {
+                DebCon.Log($"Pool for prefab {prefab.name} already exists.", "PoolService");
+                return;
+            }
+            
+            queue = new Queue<GameObject>();
+            _pools[prefab] = queue;
+
+            var root = GetRoot(prefab);
+            for (var i = 0; i < count; i++)
+            {
+                var instance = Object.Instantiate(prefab, Vector3.zero, Quaternion.identity, root.transform);
+                instance.name = prefab.name + "_" + (root.transform.childCount - 1);
+                instance.SetActive(false);
+                
+                var pooledObj = instance.gameObject.AddComponent<PooledObject>();
+                pooledObj.Prefab = prefab;
+                pooledObj.Pool = this;
+                
+                queue.Enqueue(instance);
+            }
+            
+            DebCon.Log($"Pool for prefab {prefab.name} initialized with {count} instances.", "PoolService");
+        }
+        
         public T Get<T>(GameObject prefab) where T : Component
         {
             if (prefab == null)
@@ -37,11 +71,11 @@ namespace DI.Services
                 }
                 
                 instance = go;
-                // instance.SetActive(true);
             }
             else
             {
                 instance = Object.Instantiate(prefab, Vector3.zero, Quaternion.identity, root.transform);
+                instance.name = prefab.name + "_" + (_poolRoots[prefab].transform.childCount - 1);
                 instance.SetActive(false);
 
                 var pooledObj = instance.gameObject.AddComponent<PooledObject>();
@@ -105,7 +139,7 @@ namespace DI.Services
 
         private void OnDisable()
         {
-            // Automatically return to pool when disabled
+            // automatically return to pool when disabled
             if (Pool != null && Prefab != null)
             {
                 Pool.Return(Prefab, gameObject);

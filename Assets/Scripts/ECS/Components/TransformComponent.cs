@@ -1,7 +1,7 @@
-﻿namespace ECS.Components
+﻿using UnityEngine;
+
+namespace ECS.Components
 {
-    using UnityEngine;
-    
     public struct TransformComponent
     {
         public Transform Transform;

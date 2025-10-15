@@ -30,7 +30,6 @@ namespace DI.Factories
             // inject dependencies at runtime
             _container.Inject(bridge);
             
-            bridge.gameObject.name = prefab.name;
             bridge.transform.SetPositionAndRotation(position, rotation);
             return bridge;
         }

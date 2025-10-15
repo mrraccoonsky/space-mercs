@@ -1,9 +1,10 @@
 ﻿using UnityEngine.AI;
 using Data.AI;
-using ECS.Bridges;
 
 namespace ECS.Components
 {
+    using Bridges;
+    
     public struct AIControlledComponent
     {
         public AIActorBridge Bridge;

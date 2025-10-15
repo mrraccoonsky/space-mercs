@@ -1,4 +1,5 @@
-﻿using Data.Actor;
+﻿using Data;
+using Data.Actor;
 
 namespace Actor
 {
@@ -14,5 +15,10 @@ namespace Actor
         void Reset();
         void SyncEcsState();
         void Tick(float dt);
+        
+        void SetTag(GlobalTag globalTag)
+        {
+            // optional method that can be implemented by modules that need to know the global tag
+        }
     }
 }

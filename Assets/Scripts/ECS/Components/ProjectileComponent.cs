@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using Data;
 
 namespace ECS.Components
 {
@@ -7,9 +8,15 @@ namespace ECS.Components
     public struct ProjectileComponent
     {
         public ProjectileBridge Bridge;
-        public string Tag;
+        public GlobalTag Tag;
         
         public HashSet<int> HitEntities;
+        
         public bool CanHitOnCooldown;
+        public bool IgnoreHitFx;
+        
+        public float Damage;
+        public float PushForce;
+        public float PushUpwardsMod;
     }
 }

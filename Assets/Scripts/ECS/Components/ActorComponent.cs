@@ -5,5 +5,6 @@
     public struct ActorComponent
     {
         public ActorBridge Bridge;
+        public Data.GlobalTag Tag;
     }
 }

@@ -20,7 +20,7 @@ namespace ECS.Bridges
             public Vector3 size;
         }
         
-        [Header("Area:")]
+        [Header("Area")]
         [SerializeField] private Vector3 areaOffset;
         [SerializeField] private Vector3 areaRotation;
         [SerializeField] private Vector3 areaSize = Vector3.one;
@@ -28,7 +28,9 @@ namespace ECS.Bridges
         [SerializeField] private bool offscreenMode = true;
         [SerializeField] private bool withinBoundsMode = true;
         [SerializeField, EnumFlags] private ScreenSide screenSides;
+        [SerializeField] private LayerMask groundLayerMask;
         
+        private readonly RaycastHit[] _hits = new RaycastHit[1];
         private BoxCollider _hitbox;
         
         private void OnDrawGizmos()
@@ -93,7 +95,7 @@ namespace ECS.Bridges
             
             SpawnedIds.Add(actor.EntityId);
             TotalSpawned++;
-            DebCon.Info($"{actor.gameObject.name} spawned at position {position}", "ActorSpawnerBridge", actor.gameObject);
+            DebCon.Info($"{actor.gameObject.name} spawned at position {position}", "SpawnerArea",gameObject);
         }
         
         private void CreateArea()
@@ -119,7 +121,7 @@ namespace ECS.Bridges
         {
             if (_hitbox == null)
             {
-                DebCon.Warn("Hitbox is null", "ActorSpawnerBridge", gameObject);
+                DebCon.Warn("Hitbox is null", "SpawnerArea", gameObject);
                 return false;
             }
             var bounds = _hitbox.bounds;
@@ -131,7 +133,7 @@ namespace ECS.Bridges
             var cam = Camera.main;
             if (cam == null)
             {
-                DebCon.Warn("Main camera not found for offscreen spawning", "ActorSpawnerBridge");
+                DebCon.Warn("Main camera is null", "SpawnerArea", gameObject);
                 return Vector3.zero;
             }
             
@@ -142,7 +144,7 @@ namespace ECS.Bridges
 
             if (selected.Count == 0)
             {
-                DebCon.Warn("No valid screen positions found for offscreen spawning", "ActorSpawnerBridge");
+                DebCon.Warn("No valid screen positions found for offscreen spawning", "SpawnerArea", gameObject);
                 return Vector3.zero;
             }
             
@@ -163,7 +165,7 @@ namespace ECS.Bridges
 
                 if (offscreenPass && boundsPass && groundPass)
                 {
-                    DebCon.Info($"Valid spawn position found after {attempts} attempts: {pos}", "ActorSpawnerBridge");
+                    DebCon.Log($"Valid spawn position found after {attempts} attempts: {pos}", "SpawnerArea", gameObject);
                     Debug.DrawLine(pos, pos + Vector3.up * 5f, Color.green, 1f);
                     return pos;
                 }
@@ -173,17 +175,16 @@ namespace ECS.Bridges
             }
             while (attempts < maxAttempts);
             
-            DebCon.Warn($"Failed to find valid spawn position after {attempts} attempts", "ActorSpawnerBridge");
+            DebCon.Warn($"Failed to find valid spawn position after {attempts} attempts", "SpawnerArea", gameObject);
             return pos;
         }
 
         private bool HasValidGround(Vector3 position, float yOffset = 0f, float maxDistance = 10f)
         {
             var ray = new Ray(position + Vector3.up * yOffset, Vector3.down);
-            var hit = Physics.Raycast(ray, out var hitInfo, maxDistance, LayerMask.GetMask("Ground", "Obstacle"));
-            if (!hit) return false;
+            if (Physics.RaycastNonAlloc(ray, _hits, maxDistance, groundLayerMask) == 0) return false;
             
-            var layer = hitInfo.collider.gameObject.layer;
+            var layer = _hits[0].collider.gameObject.layer;
             return layer == LayerMask.NameToLayer("Ground");
         }
     }

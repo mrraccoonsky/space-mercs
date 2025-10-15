@@ -36,7 +36,7 @@ namespace ECS.Bridges
             
             SpawnedIds.Add(actor.EntityId);
             TotalSpawned++;
-            DebCon.Info($"{actor.gameObject.name} spawned at position {position}", "ActorSpawnerBridge", actor.gameObject);
+            DebCon.Info($"{actor.gameObject.name} spawned at position {position}", "SpawnerPoint", gameObject);
         }
     }
 }

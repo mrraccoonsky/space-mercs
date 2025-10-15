@@ -24,7 +24,8 @@ namespace Core.Camera
         [SerializeField] private Camera cam;
         [SerializeField] private CinemachineCamera playerCamera;
 
-        [Header("Settings:")]
+        [Header("Settings")]
+        [SerializeField] private LayerMask raycastLayerMask;
         [SerializeField] private float cornerUpdateInterval = 0.2f;
         [SerializeField] private float xSensitivity = 0.5f;
         [SerializeField] private float ySensitivity = 0.5f;
@@ -38,6 +39,7 @@ namespace Core.Camera
         private CinemachinePanTilt _panTilt;
         private CinemachineForwardOnly _forwardOnly;
         
+        private readonly RaycastHit[] _hits = new RaycastHit[1];
         private Vector3[] _corners;
         private float _lastCornersUpdateTime;
         
@@ -141,7 +143,7 @@ namespace Core.Camera
         {
             if (playerCamera == null)
             {
-                DebCon.Warn("Player camera is null", "CameraController");
+                DebCon.Warn("Player camera is null", "CameraController", gameObject);
                 return;
             }
             
@@ -166,7 +168,7 @@ namespace Core.Camera
     
             if (_corners == null || _corners.Length < 4)
             {
-                DebCon.Warn("Failed to get viewport corners", "CameraController");
+                DebCon.Warn("Failed to get viewport corners", "CameraController", gameObject);
                 return position;
             }
     
@@ -191,7 +193,7 @@ namespace Core.Camera
         {
             if (cam == null)
             {
-                DebCon.Warn("Camera is null", "CameraController");
+                DebCon.Warn("Camera is null", "CameraController", gameObject);
                 return Vector3.zero;
             }
             
@@ -201,7 +203,7 @@ namespace Core.Camera
             
             if (_corners == null || _corners.Length < 4)
             {
-                DebCon.Warn("Failed to get viewport corners", "CameraController");
+                DebCon.Warn("Failed to get viewport corners", "CameraController", gameObject);
                 return Vector3.zero;
             }
             
@@ -236,7 +238,7 @@ namespace Core.Camera
         {
             if (cam == null)
             {
-                DebCon.Warn("Camera is null", "CameraController");
+                DebCon.Warn("Camera is null", "CameraController", gameObject);
                 return false;
             }
             
@@ -257,8 +259,6 @@ namespace Core.Camera
             }
             
             var corners = new Vector3[4];
-            var layerMask = LayerMask.GetMask("RaycastCatcher");
-
             var origin = cam.transform.position;
             var targets = new[] {
                 cam.ViewportToWorldPoint(new Vector3(0f, 0f, cam.farClipPlane)),    // bottom left
@@ -271,13 +271,14 @@ namespace Core.Camera
             for (var i = 0; i < targets.Length; i++)
             {
                 var dir = targets[i] - origin;
-                if (Physics.Raycast(pos, dir, out var hitInfo, cam.farClipPlane, layerMask))
+                var ray = new Ray(pos, dir);
+                if (Physics.RaycastNonAlloc(ray, _hits, cam.farClipPlane, raycastLayerMask) > 0)
                 {
-                    corners[i] = hitInfo.point;
+                    corners[i] = _hits[0].point;
                 }
                 else
                 {
-                    DebCon.Err("Raycast failed", "CameraController");
+                    DebCon.Err("Raycast failed", "CameraController", gameObject);
                     return null;
                 }
             }
@@ -295,8 +296,6 @@ namespace Core.Camera
             }
             
             var corners = new Vector3[4];
-            var layerMask = LayerMask.GetMask("RaycastCatcher");
-            
             var origins = new[] {
                 cam.ViewportToWorldPoint(new Vector3(0f, 0f, cam.nearClipPlane)),   // bottom left
                 cam.ViewportToWorldPoint(new Vector3(1f, 0f, cam.nearClipPlane)),   // bottom right
@@ -315,13 +314,15 @@ namespace Core.Camera
             {
                 var pos = origins[i];
                 var dir = targets[i] - origins[i];
-                if (Physics.Raycast(pos, dir, out var hitInfo, cam.farClipPlane, layerMask))
+                var ray = new Ray(pos, dir);
+                
+                if (Physics.RaycastNonAlloc(ray, _hits, cam.farClipPlane, raycastLayerMask) > 0)
                 {
-                    corners[i] = hitInfo.point;
+                    corners[i] = _hits[0].point;
                 }
                 else
                 {
-                    DebCon.Err("Raycast failed", "CameraController");
+                    DebCon.Err("Raycast failed", "CameraController", gameObject);
                     return null;
                 }
             }

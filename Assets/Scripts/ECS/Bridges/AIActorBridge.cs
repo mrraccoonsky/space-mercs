@@ -15,7 +15,7 @@ namespace ECS.Bridges
     {
         [SerializeField] private NavMeshAgent agent;
         [SerializeField] private AIConfig config;
-        [SerializeField] private LayerMask obstacleLayer;
+        [SerializeField] private LayerMask obstacleLayerMask;
      
         // debug values display
         [ReadOnly, SerializeField] private AIBehaviorState currentState;
@@ -69,8 +69,6 @@ namespace ECS.Bridges
                 aAI.Agent = agent;
                 aAI.Config = config;
             }
-            
-            obstacleLayer = LayerMask.GetMask("Ground", "Obstacle");
         }
 
         public void Tick(float dt)
@@ -107,8 +105,8 @@ namespace ECS.Bridges
             var targetDirection = aTo - aFrom;
             var targetDistance = targetDirection.magnitude;
             targetDirection = targetDirection.normalized;
-            
-            return !Physics.Raycast(aFrom, targetDirection, out var hit, targetDistance, obstacleLayer);
+
+            return !Physics.Raycast(aFrom, targetDirection, targetDistance, obstacleLayerMask);
         }
     }
 }

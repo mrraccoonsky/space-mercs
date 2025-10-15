@@ -12,7 +12,7 @@ namespace Cinemachine
         [SerializeField] private bool positiveDirection = true;
         [SerializeField] private bool debugMode;
 
-        private float _initDelay = -1f;
+        private float _initDelay = 1f;
         private float _extremeValue;
         
         public bool IsInit { get; private set; }
@@ -38,7 +38,7 @@ namespace Cinemachine
                 
                 if (debugMode)
                 {
-                    DebCon.Info($"Initialized extreme value to: {_extremeValue}", "CinemachineForwardOnly", vcam.gameObject);
+                    DebCon.Info($"Initialized with extreme value = {_extremeValue}", "CinemachineForwardOnly", gameObject);
                 }
             }
 
@@ -78,7 +78,7 @@ namespace Cinemachine
             
             if (debugMode)
             {
-                DebCon.Info($"Reset extreme value - will reinitialize on next update with delay: {delay}", "CinemachineForwardOnly");
+                DebCon.Info($"Resetting extreme value - will reinitialize on next update with delay = {delay}", "CinemachineForwardOnly", gameObject);
             }
         }
         

@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace DI.Services
 {
-    [CreateAssetMenu(fileName = "EventBusService", menuName = "Game/Event Bus Service")]
+    [CreateAssetMenu(fileName = "EventBusService", menuName = "SO/Game/EventBusService")]
     public class EventBusService : ScriptableObject, IEventBusService
     {
         [Serializable]

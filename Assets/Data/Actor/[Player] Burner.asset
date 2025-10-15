@@ -24,18 +24,15 @@ MonoBehaviour:
   targetMoveSpeed: 50
   rotationSpeed: 3
   aimTowardsAttackDirection: 0
+  weaponCfg: {fileID: 11400000, guid: 9705ce4d86a3a5d41a7d139b6fd768b3, type: 2}
   attackCooldown: 0.02
   holdBurstTransform: 0
   burstCount: 1
   burstCooldown: 0.02
-  scatterAngle: 0
-  scatterType: 0
-  projectilePrefab: {fileID: 3905571746805792301, guid: f78f30cf4702eb04c9497ecf3912edf6, type: 3}
+  projectileConfig: {fileID: 11400000, guid: ad17da3b91548d142a15241baaa9663d, type: 2}
   projectileCount: 20
   projectileCooldown: 0.04
-  projectileLifetime: 0.7
-  projectileSpeed: 8
-  projectilePenetrationCount: 0
-  canHitOnCooldown: 1
+  scatterAngle: 0
+  scatterType: 0
   maxHealth: 50
   hitCooldown: 0.5

@@ -1,7 +1,7 @@
-﻿namespace ECS.Components
+﻿using UnityEngine;
+
+namespace ECS.Components
 {
-    using UnityEngine;
-    
     public struct InputComponent
     {
         public Vector2 Movement;

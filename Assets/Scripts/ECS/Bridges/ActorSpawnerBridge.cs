@@ -25,6 +25,7 @@ namespace ECS.Bridges
         [SerializeField] protected GameObject[] prefabs; // todo: use configs instead
 
         [Inject] protected CameraController CameraController;
+        [Inject] protected IPoolService PoolService;
         [Inject] protected IActorSpawnService SpawnService;
         [Inject] private IEventBusService _eventBus;
         
@@ -60,6 +61,8 @@ namespace ECS.Bridges
             var spawnerPool = World.GetPool<SpawnerComponent>();
             ref var aSpawner = ref spawnerPool.Add(EntityId);
             aSpawner.Bridge = this;
+            
+            InitPools();
 
             _playerFilter = World.Filter<TransformComponent>()
                 .Inc<ActorComponent>()
@@ -129,6 +132,34 @@ namespace ECS.Bridges
             }
 
             return Vector3.zero;
+        }
+
+        private void InitPools()
+        {
+            foreach (var prefab in prefabs)
+            {
+                var actor = prefab.GetComponent<ActorBridge>();
+                if (actor == null) continue;
+                
+                var cfg = actor.Config;
+                if (cfg == null) continue;
+                
+                // init actor pool
+                PoolService.Init(prefab, spawnLimit);
+
+                // init projectile and explosion pools
+                var weaponCfg = cfg.weaponCfg;
+                if (weaponCfg != null)
+                {
+                    PoolService.Init(weaponCfg.projectilePrefab, 10);
+
+                    var explosionCfg = weaponCfg.explosionConfig;
+                    if (explosionCfg != null)
+                    {
+                        PoolService.Init(weaponCfg.explosionConfig.explosionPrefab, 3);
+                    }
+                }
+            }
         }
 
         private void HandleActorDestroyed(ActorDestroyedEvent e)

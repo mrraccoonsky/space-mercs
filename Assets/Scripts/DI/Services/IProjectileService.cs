@@ -1,11 +1,17 @@
 using UnityEngine;
-using Data.Projectile;
+using Data;
+using Data.Explosion;
+using Data.Weapon;
+using ECS.Bridges;
 
 namespace DI.Services
 {
     public interface IProjectileService
     { 
-        void Spawn(ProjectileData data, Vector3 position, Quaternion rotation);
-        void Destroy(int entityId);
+        ProjectileBridge SpawnProjectile(WeaponConfig cfg, GlobalTag tag, Vector3 position, Quaternion rotation);
+        void DestroyProjectile(int entityId);
+        
+        ExplosionBridge SpawnExplosion(ExplosionConfig cfg, GlobalTag tag, Vector3 position);
+        void DestroyExplosion(int entityId);
     }
 }

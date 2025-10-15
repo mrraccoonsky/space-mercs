@@ -2,7 +2,7 @@
 
 namespace Data.AI
 {
-    [CreateAssetMenu(fileName = "AIConfig", menuName = "ScriptableObjects/AIConfig")]
+    [CreateAssetMenu(fileName = "AIConfig", menuName = "SO/Actor/AIConfig")]
     public class AIConfig : ScriptableObject
     {
         public float detectionRadius = 10f;

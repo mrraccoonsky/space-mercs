@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2334bbdca7be45188d1163a2a40d4d04, type: 3}
+  m_Name: '[Weapon] Launcher'
+  m_EditorClassIdentifier: Assembly-CSharp::Data.Weapon.WeaponConfig
+  enableFriendlyFire: 0
+  canHitOnCooldown: 1
+  ignoreHitFx: 0
+  attackCooldown: 1.4
+  projectileCount: 1
+  projectileCooldown: 0
+  burstCount: 2
+  burstCooldown: 0.3
+  holdBurstTransform: 0
+  scatterAngle: 5
+  scatterType: 1
+  originCycleMode: 0
+  switchAfterEachShot: 0
+  projectilePrefab: {fileID: 3905571746805792301, guid: d20658a0593603f4ca121dbc6bbf5b9b, type: 3}
+  hitboxEnableDelay: 0
+  damage: 50
+  speed: 8
+  lifetime: 1.5
+  penetrationCount: 0
+  enableRigidbody: 1
+  rbHitObstacles: 0
+  rbTilt: -20
+  rbUpwardsMod: -40
+  pushForce: 50
+  pushUpwardsMod: 10
+  explosionConfig: {fileID: 11400000, guid: b4c85033ffac39047ae2a0111773e0b5, type: 2}

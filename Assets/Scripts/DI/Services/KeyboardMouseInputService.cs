@@ -12,11 +12,11 @@ namespace DI.Services
         public bool IsActionHit { get; private set; }
         public bool IsActionHeld { get; private set; }
         public bool IsActionReleased { get; private set; }
-
+        
         public bool IsAimHit { get; private set; }
         public bool IsAimHeld { get; private set; }
         public bool IsAimReleased { get; private set; }
-
+        
         public bool IsAttackHit { get; private set; }
         public bool IsAttackHeld { get; private set; }
         public bool IsAttackReleased { get; private set; }
@@ -25,6 +25,7 @@ namespace DI.Services
         public Vector2 CursorDelta { get; private set; }
         public bool IsRotatingCamera { get; private set; }
         
+        private readonly RaycastHit[] _hits = new RaycastHit[1];
         private readonly LayerMask _raycastLayerMask;
         
         public KeyboardMouseInputService()
@@ -47,7 +48,7 @@ namespace DI.Services
             if (Keyboard.current.dKey.isPressed) movement.x += 1f;
             movement.Normalize();
             Movement = movement;
-
+            
             IsActionHit = Keyboard.current.spaceKey.wasPressedThisFrame;
             IsActionHeld = Keyboard.current.spaceKey.isPressed;
             IsActionReleased = Keyboard.current.spaceKey.wasReleasedThisFrame;
@@ -56,7 +57,7 @@ namespace DI.Services
             IsAimHeld = Mouse.current.rightButton.isPressed;
             IsAimReleased = Mouse.current.rightButton.wasReleasedThisFrame;
             // AimPosition value are controlled by InputSystem
-
+            
             IsAttackHit = Mouse.current.leftButton.wasPressedThisFrame;
             IsAttackHeld = Mouse.current.leftButton.isPressed;
             IsAttackReleased = Mouse.current.leftButton.wasReleasedThisFrame;
@@ -71,8 +72,9 @@ namespace DI.Services
             if (MainCamera == null) return Vector3.zero;
             
             var ray = MainCamera.ScreenPointToRay(CursorPosition);
-            return Physics.Raycast(ray, out var hitInfo, 100f, _raycastLayerMask)
-                ? hitInfo.point
+            var hitCount = Physics.RaycastNonAlloc(ray, _hits, 100f, _raycastLayerMask);
+            return hitCount > 0
+                ? _hits[0].point
                 : Vector3.zero;
         }
     }

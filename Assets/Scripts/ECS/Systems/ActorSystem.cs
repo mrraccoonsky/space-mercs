@@ -3,7 +3,7 @@ using UnityEngine;
 using Core.Camera;
 using ECS.Bridges;
 using ECS.Components;
-using Tools;
+using ECS.Utils;
 
 namespace ECS.Systems
 {
@@ -26,7 +26,7 @@ namespace ECS.Systems
         {
             _world = world;
             
-            _actorFilter = _world.Filter<ActorComponent>().Inc<HealthComponent>().End();
+            _actorFilter = _world.Filter<ActorComponent>().End();
             _playerFilter = _world.Filter<ActorComponent>().Exc<AIControlledComponent>().End();
             _aiFilter = _world.Filter<ActorComponent>().Inc<AIControlledComponent>().End();
             
@@ -45,16 +45,18 @@ namespace ECS.Systems
             {
                 ref var aActor = ref actorPool.Get(e);
                 var bridge = aActor.Bridge;
-                
-                var healthPool = _world.GetPool<HealthComponent>();
-                ref var aHealth = ref healthPool.Get(e);
-                
-                if (CheckNeedsDestroy(ref aHealth))
+
+                if (EcsUtils.HasCompInPool<HealthComponent>(_world, e, out var healthPool))
                 {
-                    if (_entitiesToDestroy.Contains(e)) continue;
+                    ref var aHealth = ref healthPool.Get(e);
+                
+                    if (CheckNeedsDestroy(ref aHealth))
+                    {
+                        if (_entitiesToDestroy.Contains(e)) continue;
                     
-                    DestroyActor(bridge, e);
-                    continue;
+                        DestroyActor(bridge, e);
+                        continue;
+                    }
                 }
                 
                 bridge?.Tick(dt);
@@ -134,7 +136,7 @@ namespace ECS.Systems
                 if (aActor.Bridge != null)
                 {
                     _cameraController.SetCameraTarget(aActor.Bridge.transform);
-                    _cameraController.ResetForwardOnly(0.5f);
+                    _cameraController.ResetForwardOnly(1f);
                 }
             }
         }

@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2334bbdca7be45188d1163a2a40d4d04, type: 3}
+  m_Name: '[Weapon] Lazer'
+  m_EditorClassIdentifier: Assembly-CSharp::Data.Weapon.WeaponConfig
+  enableFriendlyFire: 0
+  canHitOnCooldown: 0
+  ignoreHitFx: 0
+  attackCooldown: 0.8
+  projectileCount: 20
+  projectileCooldown: 0.01
+  burstCount: 1
+  burstCooldown: 0.1
+  holdBurstTransform: 1
+  scatterAngle: 0
+  scatterType: 0
+  originCycleMode: 0
+  switchAfterEachShot: 0
+  projectilePrefab: {fileID: 3905571746805792301, guid: e335959515330b446a260f1be62b5000, type: 3}
+  hitboxEnableDelay: 0
+  damage: 10
+  speed: 15
+  lifetime: 0.6
+  penetrationCount: 1
+  enableRigidbody: 0
+  rbHitObstacles: 0
+  rbTilt: 1
+  rbUpwardsMod: 1
+  pushForce: 30
+  pushUpwardsMod: -5
+  explosionConfig: {fileID: 0}

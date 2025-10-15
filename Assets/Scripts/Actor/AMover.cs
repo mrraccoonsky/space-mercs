@@ -8,15 +8,16 @@ using Tools;
 namespace Actor
 {
     using Leopotam.EcsLite;
+    using NaughtyAttributes;
     using Zenject;
     
     public class AMover : MonoBehaviour, IActorModule
     {
         [SerializeField] private Transform tVisuals;
-        
-        [Header("Movement:")]
-        [SerializeField] private float speed = 5f;
         [SerializeField] private float screenClampBuffer;   // clamps the actor's position to the camera's viewport if > 0 
+
+        [Header("Slope Modifiers")]
+        [SerializeField] private bool enableSlopeSpeedCalculation;
         
         [Space]
         [SerializeField] private float uphillStartAngle = 5f;
@@ -28,27 +29,32 @@ namespace Actor
         [SerializeField] private float downhillMaxAngle = 30f;
         [SerializeField] private float downhillSpeedMultiplier = 1.3f;
 
-        [Header("Jumping:")]
-        [SerializeField] private float jumpHeight = 1.5f;
-        [SerializeField] private float jumpDelay = 0.1f;
-        [SerializeField] private float jumpCooldown = 0.1f;
-        [SerializeField] private float velocityDecrement = 10f;
-
-        [Header("Gravity:")]
-        [SerializeField] private float gravityMultiplier = 1f;
-        [SerializeField] private float fallMultiplier = 2.5f;
-        [SerializeField] private float lowJumpMultiplier = 2f;
-        
-        [Header("Ground Alignment:")]
+        [Header("Ground Alignment")]
+        [SerializeField] private LayerMask walkableLayerMask;
         [SerializeField] private float maxGroundAngle = 10f;
         [SerializeField] private float rotationSpeed = 10f;
         [SerializeField] private float groundCheckDistance = 0.75f;
         [SerializeField] private float groundCheckOffset = 0.25f;
         [SerializeField] private float groundCheckRadius = 0.5f;
         [SerializeField] private int groundSampleCount = 6;
+
+        [Space]
+        [ReadOnly, SerializeField] private float speed;
+        
+        [Space]
+        [ReadOnly, SerializeField] private float jumpHeight;
+        [ReadOnly, SerializeField] private float jumpDelay;
+        [ReadOnly, SerializeField] private float jumpCooldown;
+        [ReadOnly, SerializeField] private float velocityDecrement;
+
+        [Space]
+        [ReadOnly, SerializeField] private float gravityMultiplier;
+        [ReadOnly, SerializeField] private float fallMultiplier;
+        [ReadOnly, SerializeField] private float lowJumpMultiplier;
         
         private Transform _t;
         private CharacterController _controller;
+        private readonly RaycastHit[] _hits = new RaycastHit[1];
 
         private Vector3 _moveDir;
         private bool _isGrounded;
@@ -83,32 +89,39 @@ namespace Actor
             if (_controller == null)
             {
                 DebCon.Err($"Character controller not found on {gameObject.name}!", "AMover", gameObject);
-            }
-
-            // init config
-            if (cfg)
-            {
-                speed = cfg.speed;
-                
-                jumpHeight = cfg.jumpHeight;
-                jumpDelay = cfg.jumpDelay;
-                jumpCooldown = cfg.jumpCooldown;
-                velocityDecrement = cfg.velocityDecrement;
-                
-                gravityMultiplier = cfg.gravityMultiplier;
-                fallMultiplier = cfg.fallMultiplier;
-                lowJumpMultiplier = cfg.lowJumpMultiplier;
+                return;
             }
             
+            // init config
+            if (cfg == null)
+            {
+                DebCon.Err($"Actor config is null on {gameObject.name}!", "AMover", gameObject);
+                return;
+            }
+                
+            speed = cfg.speed;
+            
+            jumpHeight = cfg.jumpHeight;
+            jumpDelay = cfg.jumpDelay;
+            jumpCooldown = cfg.jumpCooldown;
+            velocityDecrement = cfg.velocityDecrement;
+            
+            gravityMultiplier = cfg.gravityMultiplier;
+            fallMultiplier = cfg.fallMultiplier;
+            lowJumpMultiplier = cfg.lowJumpMultiplier;
+            
             // add component to pool
-            var movementPool = world.GetPool<MovementComponent>();
-            movementPool.Add(entityId);
+            var moverPool = world.GetPool<MoverComponent>();
+            moverPool.Add(entityId);
             
             SyncEcsState();
         }
         
         public void Reset()
         {
+            if (!enabled) return;
+            
+            _controller.enabled = true;
             _moveDir = Vector3.zero;
             _isGrounded = false;
             
@@ -133,11 +146,11 @@ namespace Actor
                 aTransform.Position = _t.position;
             }
 
-            if (EcsUtils.HasCompInPool<MovementComponent>(World, EntityId, out var movementPool))
+            if (EcsUtils.HasCompInPool<MoverComponent>(World, EntityId, out var moverPool))
             {
                 var move = _moveDir * (speed * _slopeSpeedMult);
                 
-                ref var aMovement = ref movementPool.Get(EntityId);
+                ref var aMovement = ref moverPool.Get(EntityId);
                 aMovement.Velocity = new Vector3(move.x, _verticalVelocity, move.z);
                 aMovement.IsGrounded = _isGrounded;
                 aMovement.HasJumped = _isJumpTriggered && Mathf.Approximately(_jumpDelayLeft, jumpDelay);
@@ -164,6 +177,7 @@ namespace Actor
 
                 if (isDead)
                 {
+                    _controller.enabled = false;
                     _moveDir = Vector3.zero;
                     return;
                 }
@@ -172,7 +186,7 @@ namespace Actor
             ref var aInput = ref inputPool.Get(EntityId);
             
             // jump related stuff
-            HandleJumpLogic(aInput, dt);
+            HandleJump(aInput, dt);
             
             // movement related stuff
             _moveDir = CalculateMoveDirection(aInput);
@@ -191,7 +205,7 @@ namespace Actor
             
             _controller.Move(move);
             
-            // todo: think of a better place to do this
+            // todo: think of a better place to do this, get rid of jitter when moving towards clamped direction
             ClampToViewport(ref aInput);
         }
         
@@ -221,11 +235,13 @@ namespace Actor
         
         private float CalculateSlopeSpeedMultiplier(Vector3 moveDirection)
         {
+            if (!enableSlopeSpeedCalculation) return 1f;
             if (!_isGrounded || moveDirection.magnitude < 0.1f) return 1f;
             
             var ray = new Ray(_t.position + _t.up * groundCheckOffset, Vector3.down);
-            if (!Physics.Raycast(ray, out var hit, groundCheckDistance)) return 1f;
-            var slopeAngle = Vector3.Angle(hit.normal, moveDirection) - 90f;
+            if (Physics.RaycastNonAlloc(ray, _hits, groundCheckDistance) == 0) return 1f;
+            
+            var slopeAngle = Vector3.Angle(_hits[0].normal, moveDirection) - 90f;
             
             // if the angle is greater than threshold, we're going uphill
             if (slopeAngle > uphillStartAngle)
@@ -245,7 +261,7 @@ namespace Actor
             return 1f;
         }
         
-        private void HandleJumpLogic(InputComponent input, float dt)
+        private void HandleJump(InputComponent input, float dt)
         {
             if (_isGrounded && _verticalVelocity < 0)
             {
@@ -350,9 +366,9 @@ namespace Actor
     
             // center raycast
             var mainRay = new Ray(_t.position + _t.up * groundCheckOffset, Vector3.down);
-            if (Physics.Raycast(mainRay, out var mainHit, groundCheckDistance))
+            if (Physics.RaycastNonAlloc(mainRay, _hits, groundCheckDistance, walkableLayerMask) > 0)
             {
-                avgNormal = mainHit.normal;
+                avgNormal = _hits[0].normal;
                 hitCount++;
             }
             
@@ -362,13 +378,14 @@ namespace Actor
                 var angle = i * (2 * Mathf.PI / groundSampleCount);
                 var offset = new Vector3(Mathf.Cos(angle) * groundCheckRadius, 0, Mathf.Sin(angle) * groundCheckRadius);
                 var origin = _t.position + _t.up * groundCheckOffset + offset;
+                
                 var ray = new Ray(origin, Vector3.down);
-                if (!Physics.Raycast(ray, out var hit, groundCheckDistance)) continue;
+                if (Physics.RaycastNonAlloc(ray, _hits, groundCheckDistance, walkableLayerMask) == 0) continue;
         
-                avgNormal += hit.normal;
+                avgNormal += _hits[0].normal;
                 hitCount++;
         
-                Debug.DrawRay(origin, hit.normal, Color.green);
+                Debug.DrawRay(origin, _hits[0].normal, Color.green);
             }
     
             return (hitCount > 0, avgNormal, hitCount);

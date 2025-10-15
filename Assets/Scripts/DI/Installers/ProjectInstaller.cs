@@ -13,7 +13,7 @@ namespace DI.Installers
     
     public class ProjectInstaller : MonoInstaller
     {
-        [SerializeField] private GlobalVariablesConfig globalVariablesConfig;
+        [SerializeField] private GlobalVarsConfig globalVars;
         [SerializeField] private CameraController cameraController;
         
         private EcsWorld _world; // is it proper to store it here?
@@ -26,7 +26,7 @@ namespace DI.Installers
             Container.Bind<EcsBootstrap>().AsSingle().NonLazy();
             
             // configs
-            Container.BindInstance(globalVariablesConfig).AsSingle();
+            Container.BindInstance(globalVars).AsSingle();
             
             // factories
             Container.Bind<IActorFactory>().To<ActorFactory>().AsSingle();

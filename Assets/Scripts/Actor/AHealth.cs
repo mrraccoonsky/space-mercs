@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using Data;
 using Data.Actor;
 using ECS.Components;
 using ECS.Utils;
@@ -7,36 +8,41 @@ using Tools;
 namespace Actor
 {
     using Leopotam.EcsLite;
+    using NaughtyAttributes;
     
     public class AHealth : MonoBehaviour, IActorModule
     {
-        [Header("Health:")]
-        [SerializeField] private float maxHealth = 100f;
-        [SerializeField] private float hitCooldown = 0.25f;
-        
-        [Header("Hitbox:")]
+        [Header("Hitbox")]
         [SerializeField] private Transform hitboxParent;
         [SerializeField] private Vector3 hitboxOffset;
         [SerializeField] private Vector3 hitboxRotation;
         [SerializeField] private Vector3 hitboxSize = Vector3.one;
+
+        [ReadOnly, SerializeField] private GlobalTag globalTag;
         
-        [Header("Visuals:")]
+        [Space]
+        [ReadOnly, SerializeField] private float currentHealth;
+        [ReadOnly, SerializeField] private float maxHealth;
+        [ReadOnly, SerializeField] private float hitCooldown;
+
+        [Space]
+        [ReadOnly, SerializeField] private bool isHit;
+        [ReadOnly, SerializeField] private float hitTimer = -1f;
         
-        [SerializeField] private ParticleSystem hitFxPrefab;
+        [Space]
+        [ReadOnly, SerializeField] private bool isDead;
+        [ReadOnly, SerializeField] private float deadTimer = -1f;
+        
+        [Space]
+        [ReadOnly, SerializeField] private Vector3 lastHitPos;
+        [ReadOnly, SerializeField] private Vector3 lastHitDir;
+        [ReadOnly, SerializeField] private float lastHitPushForce;
+        [ReadOnly, SerializeField] private float lastHitPushUpwardsMod;
+        [ReadOnly, SerializeField] private bool lastHitIgnoreFx;
         
         private BoxCollider _hitbox;
-        private ParticleSystem _hitFx;
         
-        private float _currentHealth;
         private float _accumHealthChange;
-
-        private bool _isHit;
-        private Vector3 _lastHitPosition;
-        private Vector3 _lastHitDirection;
-        private float _hitTimer = -1f;
-        
-        private bool _isDead;
-        private float _deadTimer = -1f;
         
         public bool IsEnabled { get; private set; }
         public int EntityId { get; private set; }
@@ -64,15 +70,18 @@ namespace Actor
             World = world;
 
             // init config (
-            if (cfg)
+            if (cfg == null)
             {
-                maxHealth = cfg.maxHealth;
-                hitCooldown = cfg.hitCooldown;
+                DebCon.Err($"Actor config is null on {gameObject.name}!", "AHealth", gameObject);
+                return;
             }
             
-            CreateHitbox();
-            CreateHitFx();
+            maxHealth = cfg.maxHealth;
+            hitCooldown = cfg.hitCooldown;
             
+            CreateHitbox();
+            
+            // add component to pool
             var healthPool = world.GetPool<HealthComponent>();
             healthPool.Add(entityId);
             
@@ -81,14 +90,23 @@ namespace Actor
 
         public void Reset()
         {
-            _currentHealth = maxHealth;
+            if (!enabled) return;
+            
+            currentHealth = maxHealth;
             _accumHealthChange = 0f;
             
-            _isHit = false;
-            _isDead = false;
+            isHit = false;
+            isDead = false;
             
-            _hitTimer = -1f;
-            _deadTimer = -1f;
+            hitTimer = -1f;
+            deadTimer = -1f;
+
+            lastHitPos = Vector3.zero;
+        }
+
+        public void SetTag(GlobalTag globalTag)
+        {
+            this.globalTag = globalTag;
         }
 
         public void SyncEcsState()
@@ -98,85 +116,116 @@ namespace Actor
                 ref var aHealth = ref healthPool.Get(EntityId);
 
                 aHealth.Module = this;
-                aHealth.Tag = gameObject.tag;
+                aHealth.Tag = globalTag;
                 aHealth.HitBox = _hitbox;
                 
-                aHealth.CurrentHealth = _currentHealth;
+                aHealth.CurrentHealth = currentHealth;
                 aHealth.MaxHealth = maxHealth;
                 
-                aHealth.IsOnCooldown = _hitTimer > 0f;
-                aHealth.IsHit = _isHit;
-                aHealth.LastHitPosition = _lastHitPosition;
-                aHealth.LastHitDirection = _lastHitDirection;
+                aHealth.IsOnCooldown = hitTimer > 0f;
+                aHealth.IsHit = isHit;
+                aHealth.LastHitPos = lastHitPos;
+                aHealth.LastHitDir = lastHitDir;
                 
-                aHealth.IsDead = _isDead;
-                aHealth.DeadTimer = _isDead ? _deadTimer : -1f;
+                aHealth.IsDead = isDead;
+                aHealth.DeadTimer = isDead ? deadTimer : -1f;
+            }
+            
+            // reset hit flag after sync
+            if (isHit)
+            {
+                isHit = false;
             }
         }
 
         public void Tick(float dt)
         {
-            if (_isHit)
+            if (hitTimer > 0f)
             {
-                _isHit = false;
-            }
-            
-            if (_hitTimer > 0f)
-            {
-                _hitTimer -= dt;
+                hitTimer -= dt;
             }
 
-            if (_deadTimer > 0f)
+            if (deadTimer > 0f)
             {
-                _deadTimer -= dt;
+                deadTimer -= dt;
             }
 
             if (_accumHealthChange != 0f)
             {
-                _currentHealth += _accumHealthChange;
-                _currentHealth = Mathf.Clamp(_currentHealth, 0f, maxHealth);
+                currentHealth += _accumHealthChange;
+                currentHealth = Mathf.Clamp(currentHealth, 0f, maxHealth);
                 
                 if (_accumHealthChange < 0f)
                 {
-                    PlayHitFx();
-                    DebCon.Info(gameObject.name + " got HIT for " + _accumHealthChange + ", current hp: " + _currentHealth, "AHealth", gameObject);
+                    DebCon.Info($"{gameObject.name} got HIT for {_accumHealthChange}, currentHealth = {currentHealth}", "AHealth", gameObject);
                 }
                 else
                 {
-                    DebCon.Info(gameObject.name + " got HEALED for " + _accumHealthChange + ", current hp: " + _currentHealth, "AHealth", gameObject);
+                    DebCon.Info($"{gameObject.name} got HEALED for {_accumHealthChange}, currentHealth = {currentHealth}", "AHealth", gameObject);
                 }
             }
 
             // single frame check if health is 0 and not dead yet - start dead timer
-            if (_currentHealth <= 0f && !_isDead)
+            if (currentHealth <= 0f && !isDead)
             {
-                _deadTimer = 2f;
+                deadTimer = 2f;
+                
+                // check if entity has both ragdoll and animator components
+                if (EcsUtils.HasCompInPool<RagdollComponent>(World, EntityId, out var ragdollPool) &&
+                    EcsUtils.HasCompInPool<AnimatorComponent>(World, EntityId, out var animatorPool))
+                {
+                    ref var aAnimator = ref animatorPool.Get(EntityId);
+                    aAnimator.Module?.SetAnimatorEnabled(false);
+                    
+                    ref var aRagdoll = ref ragdollPool.Get(EntityId);
+                    aRagdoll.Module?.SetRagdollEnabled(true);
+
+                    var forceDir = lastHitDir;
+                    DebCon.Log($"Adding force to {gameObject.name}'s ragdoll at {forceDir}, force = {lastHitPushForce}, upwardsMod = {lastHitPushUpwardsMod}", "AHealth", gameObject);
+                    
+                    forceDir *= lastHitPushForce;
+                    forceDir.y = lastHitPushUpwardsMod;
+                    
+                    var moveDir = Vector3.zero;
+                    if (EcsUtils.HasCompInPool<MoverComponent>(World, EntityId, out var moverPool))
+                    {
+                        ref var aMover = ref moverPool.Get(EntityId);
+                        moveDir = aMover.Velocity;
+                        moveDir.y = 0f;
+                    }
+                    
+                    aRagdoll.Module?.AddForce(forceDir, moveDir, lastHitPos);
+                }
             }
             
-            _isDead = _currentHealth <= 0f;
+            isDead = currentHealth <= 0f;
 
             if (_hitbox)
             {
-                _hitbox.enabled = !_isDead;
+                _hitbox.enabled = !isDead;
             }
             
             _accumHealthChange = 0f;
         }
         
-        public void RegisterHitData(Vector3 hitPosition, Vector3 hitDirection)
+        public void StoreHitData(Vector3 pos, Vector3 dir, float force, float upwardsMod, bool ignoreHitFx)
         {
-            _lastHitPosition = hitPosition;
-            _lastHitDirection = hitDirection;
+            lastHitPos = pos;
+            lastHitDir = dir;
+            
+            lastHitPushForce = force;
+            lastHitPushUpwardsMod = upwardsMod;
+            lastHitIgnoreFx = ignoreHitFx;
         }
         
         public void ChangeHealth(float value)
         {
             if (value < 0f)
             {
-                if (_hitTimer <= 0f)
+                if (hitTimer <= 0f)
                 {
-                    _isHit = true;
-                    _hitTimer = hitCooldown;
+                    isHit = true;
+                    hitTimer = hitCooldown;
                 }
                 else
                 {
@@ -206,22 +255,6 @@ namespace Actor
             _hitbox.isTrigger = true;
             _hitbox.size = hitboxSize;
             _hitbox.center = hitboxOffset;
-        }
-        
-        private void CreateHitFx()
-        {
-            if (hitFxPrefab == null) return;
-            _hitFx = Instantiate(hitFxPrefab, transform);
-        }
-        
-        private void PlayHitFx()
-        {
-            if (_hitFx == null) return;
-            
-            _hitFx.transform.localPosition = transform.InverseTransformPoint(_lastHitPosition);
-            _hitFx.transform.rotation = Quaternion.LookRotation(_lastHitDirection);
-            
-            _hitFx.Play();
         }
     }
 }

@@ -7,18 +7,20 @@ using Tools;
 namespace Actor
 {
     using Leopotam.EcsLite;
+    using NaughtyAttributes;
     
     public class AAnimator : MonoBehaviour, IActorModule
     {
         [SerializeField] private Animator animator;
-        [SerializeField] private float movementVelocityMult = 0.2f;
-        [SerializeField] private float movementSmoothTime = 0.1f;
+        [SerializeField] private float movementVelocityMult = 0.33f;
+        [SerializeField] private float movementSmoothTime = 0.05f;
+        
+        [Space]
+        [ReadOnly, SerializeField] private bool currentState;
+        [ReadOnly, SerializeField] private float curForwardVelocity;
+        [ReadOnly, SerializeField] private float curStrafeVelocity;
         
         private Transform _t;
-        
-        private Vector2 _curMoveVelocity;
-        private float _curForwardVelocity;
-        private float _curStrafeVelocity;
         
         // mover
         private static readonly int MoveX = Animator.StringToHash("moveX");
@@ -50,9 +52,6 @@ namespace Actor
             EntityId = entityId;
             World = world;
             
-            var animationPool = World.GetPool<AnimationComponent>();
-            animationPool.Add(EntityId);
-            
             if (animator == null)
             {
                 var component = GetComponentInChildren<Animator>();
@@ -65,25 +64,36 @@ namespace Actor
                 animator = component;
             }
             
+            // add component to pool
+            var animatorPool = World.GetPool<AnimatorComponent>();
+            ref var aAnimator = ref animatorPool.Add(EntityId);
+            aAnimator.Module = this;
+            
             _t = transform;
         }
 
         public void Reset()
         {
-            // ...
+            if (!enabled) return;
+            
+            SetAnimatorEnabled(true);
         }
         
         public void SyncEcsState()
         {
-            // nothing to sync... yet
+            if (EcsUtils.HasCompInPool<AnimatorComponent>(World, EntityId, out var animatorPool))
+            {
+                ref var aAnimator = ref animatorPool.Get(EntityId);
+                aAnimator.Module = this;
+            }
         }
 
         public void Tick(float dt)
         {
-            if (animator == null) return;
+            if (animator == null || !animator.enabled) return;
             if (World == null) return;
             
-            // Input component
+            // Input
             var moveInput = Vector3.zero;
             Transform relativeTo = null;
 
@@ -98,31 +108,31 @@ namespace Actor
                 }
             }
             
-            // Aim component
+            // aAimer
             var isRelative = false;
             var isAiming = false;
             
-            if (EcsUtils.HasCompInPool<AimComponent>(World, EntityId, out var aimPool))
+            if (EcsUtils.HasCompInPool<AimerComponent>(World, EntityId, out var aimerPool))
             {
-                ref var aAim = ref aimPool.Get(EntityId);
+                ref var aAim = ref aimerPool.Get(EntityId);
 
                 if (relativeTo == null)
                 {
                     relativeTo = aAim.TargetOrigin;
                 }
                 
-                isAiming = aimPool.Has(EntityId) && aAim.IsAiming;
-                isRelative = aimPool.Has(EntityId) && isAiming && relativeTo != null;
+                isAiming = aimerPool.Has(EntityId) && aAim.IsAiming;
+                isRelative = aimerPool.Has(EntityId) && isAiming && relativeTo != null;
             }
             
-            // Movement component
+            // aMover
             var movement = Vector3.zero;
             var hasJumped = false;
             var isGrounded = true;
 
-            if (EcsUtils.HasCompInPool<MovementComponent>(World, EntityId, out var movementPool))
+            if (EcsUtils.HasCompInPool<MoverComponent>(World, EntityId, out var moverPool))
             {
-                ref var aMovement = ref movementPool.Get(EntityId);
+                ref var aMovement = ref moverPool.Get(EntityId);
                 var velocity = aMovement.Velocity;
                 isGrounded = aMovement.IsGrounded || velocity.magnitude < 0.1f;
                 hasJumped = aMovement.HasJumped;
@@ -138,16 +148,16 @@ namespace Actor
             if (Mathf.Abs(move.x) < MovementEpsilon) move.x = 0f;
             if (Mathf.Abs(move.y) < MovementEpsilon) move.y = 0f;
             
-            // Attack component
+            // aAttacker
             var isAttacking = false;
 
-            if (EcsUtils.HasCompInPool<AttackComponent>(World, EntityId, out var attackPool))
+            if (EcsUtils.HasCompInPool<AttackerComponent>(World, EntityId, out var attackerPool))
             {
-                ref var aAttack = ref attackPool.Get(EntityId);
+                ref var aAttack = ref attackerPool.Get(EntityId);
                 isAttacking = aAttack.IsAttacking;
             }
             
-            // Health Component
+            // aHealth
             var isDead = false;
             var isHit = false;
             
@@ -158,21 +168,31 @@ namespace Actor
                 isHit = aHealth.IsHit;
             }
             
-            // Pass values
+            // pass values
             animator.SetFloat(MoveX, move.x);
             animator.SetFloat(MoveY, move.y);
             animator.SetBool(IsJumping, hasJumped);
             animator.SetBool(IsGrounded, isGrounded);
             
-            // aimer
+            // aAimer
             animator.SetBool(IsAiming, isAiming);
             
-            // attacker
+            // aAttacker
             animator.SetBool(IsAttacking, isAttacking);
             
             // health
             animator.SetBool(IsDead, isDead);
             animator.SetBool(IsHit, isHit);
+        }
+        
+        public void SetAnimatorEnabled(bool state)
+        {
+            if (currentState == state) return;
+            if (animator == null) return;
+            animator.enabled = state;
+
+            currentState = state;
+            DebCon.Log($"Setting animator enabled to {state}", "AAnimator", gameObject);
         }
 
         private Vector2 UpdateMovementRelative(Transform relativeTo, Vector2 movement, bool invert = false)
@@ -202,12 +222,12 @@ namespace Actor
                 
             var curX = Mathf.SmoothDamp(animator.GetFloat(MoveX),
                 tarX,
-                ref _curStrafeVelocity,
+                ref curStrafeVelocity,
                 movementSmoothTime);
                 
             var curY = Mathf.SmoothDamp(animator.GetFloat(MoveY),
                 tarY,
-                ref _curForwardVelocity,
+                ref curForwardVelocity,
                 movementSmoothTime);
                 
             return new Vector2(curX, curY);
@@ -221,12 +241,12 @@ namespace Actor
             // smoothly return strafe to zero
             var curX = Mathf.SmoothDamp(animator.GetFloat(MoveX),
                 0,
-                ref _curStrafeVelocity,
+                ref curStrafeVelocity,
                 movementSmoothTime);
             
             var curY = Mathf.SmoothDamp(animator.GetFloat(MoveY),
                 targetSpeed,
-                ref _curForwardVelocity,
+                ref curForwardVelocity,
                 movementSmoothTime);
             
             return new Vector2(curX, curY);

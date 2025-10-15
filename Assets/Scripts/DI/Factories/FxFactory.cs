@@ -24,7 +24,9 @@ namespace DI.Factories
                 return null;
             }
             
+            // inject dependencies at runtime
             // _container.Inject(fx);
+            
             fx.transform.SetPositionAndRotation(position, rotation);
             return fx;
         }

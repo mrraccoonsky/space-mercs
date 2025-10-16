@@ -40,6 +40,7 @@ namespace Actor
         private Transform _t;
         private Transform _targetOrigin;
 
+        private bool _isDead;
         private Vector3 _lastOriginPos;
         private bool _isAiming;
         
@@ -99,13 +100,21 @@ namespace Actor
         public void Reset()
         {
             if (!enabled) return;
-            
+
             _lastOriginPos = _targetOrigin.position;
             _isAiming = false;
         }
         
         public void SyncEcsState()
         {
+            if (EcsUtils.HasCompInPool<HealthComponent>(World, EntityId, out var healthPool))
+            {
+                ref var aHealth = ref healthPool.Get(EntityId);
+                _isDead = aHealth.IsDead;
+
+                if (_isDead) return;
+            }
+            
             // override transform component values
             if (EcsUtils.HasCompInPool<TransformComponent>(World, EntityId, out var transformPool))
             {
@@ -132,21 +141,16 @@ namespace Actor
                 DebCon.Err($"Input component not found on {gameObject.name}!", "AAimer", gameObject);
                 return;
             }
-
-            // todo: think of a better way to kill switch logics 
-            if (EcsUtils.HasCompInPool<HealthComponent>(World, EntityId, out var healthPool))
+            
+            if (_isDead)
             {
-                ref var aHealth = ref healthPool.Get(EntityId);
-                if (aHealth.IsDead)
+                foreach (var c in constraintData)
                 {
-                    foreach (var c in constraintData)
-                    {
-                        c.constraint.constraintActive = false;
-                        c.constraint.weight = 0f;
-                    }
-                    
-                    return;
+                    c.constraint.constraintActive = false;
+                    c.constraint.weight = 0f;
                 }
+                    
+                return;
             }
             
             ref var aInput = ref inputPool.Get(EntityId);

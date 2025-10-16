@@ -56,6 +56,7 @@ namespace Actor
         private CharacterController _controller;
         private readonly RaycastHit[] _hits = new RaycastHit[1];
 
+        private bool _isDead;
         private Vector3 _moveDir;
         private bool _isGrounded;
         
@@ -120,8 +121,7 @@ namespace Actor
         public void Reset()
         {
             if (!enabled) return;
-            
-            _controller.enabled = true;
+
             _moveDir = Vector3.zero;
             _isGrounded = false;
             
@@ -139,6 +139,14 @@ namespace Actor
         
         public void SyncEcsState()
         {
+            if (EcsUtils.HasCompInPool<HealthComponent>(World, EntityId, out var healthPool))
+            {
+                ref var aHealth = ref healthPool.Get(EntityId);
+                _isDead = aHealth.IsDead;
+
+                if (_isDead) return;
+            }
+            
             if (EcsUtils.HasCompInPool<TransformComponent>(World, EntityId, out var transformPool))
             {
                 ref var aTransform = ref transformPool.Get(EntityId);
@@ -169,19 +177,8 @@ namespace Actor
                 return;
             }
             
-            // todo: think of a better way to kill switch logics
-            if (EcsUtils.HasCompInPool<HealthComponent>(World, EntityId, out var healthPool))
-            {
-                ref var aHealth = ref healthPool.Get(EntityId);
-                var isDead = aHealth.IsDead;
-
-                if (isDead)
-                {
-                    _controller.enabled = false;
-                    _moveDir = Vector3.zero;
-                    return;
-                }
-            }
+            _controller.enabled = !_isDead;
+            if (_isDead) return;
             
             ref var aInput = ref inputPool.Get(EntityId);
             

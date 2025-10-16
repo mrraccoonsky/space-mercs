@@ -3203,18 +3203,18 @@ MonoBehaviour:
   weapon: {fileID: 0}
   originsRoot: {fileID: 2106645539513660472}
   globalTag: 0
+  attackCooldownTimer: 0
+  projectileCount: 0
+  projectileCooldownTimer: 0
+  burstCount: 0
+  burstCooldownTimer: 0
+  scatterAngle: 0
   origins: []
   currentOriginIndex: 0
   currentCycleDirection: 1
   holdTransform: 0
   holdSpawnPos: {x: 0, y: 0, z: 0}
   holdSpawnRot: {x: 0, y: 0, z: 0, w: 0}
-  scatterAngle: 0
-  attackCooldownTimer: 0
-  projectileCooldownTimer: 0
-  burstCooldownTimer: 0
-  projectileCount: 0
-  burstCount: 0
   isAttacking: 0
   isAttackTriggered: 0
 --- !u!114 &1538316315293654849

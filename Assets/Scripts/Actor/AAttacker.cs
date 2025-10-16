@@ -21,6 +21,14 @@ namespace Actor
         [ReadOnly, SerializeField] private GlobalTag globalTag;
         
         [Space]
+        [ReadOnly, SerializeField] private float attackCooldownTimer;
+        [ReadOnly, SerializeField] private int projectileCount;
+        [ReadOnly, SerializeField] private float projectileCooldownTimer;
+        [ReadOnly, SerializeField] private int burstCount;
+        [ReadOnly, SerializeField] private float burstCooldownTimer;
+        [ReadOnly, SerializeField] private float scatterAngle;
+
+        [Space]
         [ReadOnly, SerializeField] private Transform[] origins;
         [ReadOnly, SerializeField] private int currentOriginIndex;
         [ReadOnly, SerializeField] private int currentCycleDirection = 1;
@@ -31,15 +39,10 @@ namespace Actor
         [ReadOnly, SerializeField] private Quaternion holdSpawnRot;
         
         [Space]
-        [ReadOnly, SerializeField] private float scatterAngle;
-        [ReadOnly, SerializeField] private float attackCooldownTimer;
-        [ReadOnly, SerializeField] private float projectileCooldownTimer;
-        [ReadOnly, SerializeField] private float burstCooldownTimer;
-        [ReadOnly, SerializeField] private int projectileCount;
-        [ReadOnly, SerializeField] private int burstCount;
-        
         [ReadOnly, SerializeField] private bool isAttacking;
         [ReadOnly, SerializeField] private bool isAttackTriggered;
+
+        private bool _isDead;
         
         public bool IsEnabled { get; private set; }
         public int EntityId { get; private set; }
@@ -84,24 +87,27 @@ namespace Actor
             
             SyncEcsState();
         }
-
+        
         public void Reset()
         {
             if (!enabled) return;
 
-            holdSpawnPos = Vector3.zero;
-            holdSpawnRot = Quaternion.identity;
-            holdTransform = false;
-            
             attackCooldownTimer = 0f;
-         
-            burstCount = 0;
-            burstCooldownTimer = 0f;
-            scatterAngle = 0f;
-        
             projectileCount = 0;
             projectileCooldownTimer = 0f;
-
+            
+            burstCount = 0;
+            burstCooldownTimer = 0f;
+            
+            scatterAngle = 0f;
+            
+            currentOriginIndex = 0;
+            currentCycleDirection = 1;
+            
+            holdTransform = false;
+            holdSpawnPos = Vector3.zero;
+            holdSpawnRot = Quaternion.identity;
+            
             isAttacking = false;
             isAttackTriggered = false;
         }
@@ -113,6 +119,14 @@ namespace Actor
         
         public void SyncEcsState()
         {
+            if (EcsUtils.HasCompInPool<HealthComponent>(World, EntityId, out var healthPool))
+            {
+                ref var aHealth = ref healthPool.Get(EntityId);
+                _isDead = aHealth.IsDead;
+
+                if (_isDead) return;
+            }
+            
             if (EcsUtils.HasCompInPool<AttackerComponent>(World, EntityId, out var attackerPool))
             {
                 ref var aAttack = ref attackerPool.Get(EntityId);
@@ -130,11 +144,9 @@ namespace Actor
                 return;
             }
             
-            // todo: think of a better way to kill switch logics 
-            if (EcsUtils.HasCompInPool<HealthComponent>(World, EntityId, out var healthPool))
+            if (_isDead)
             {
-                ref var aHealth = ref healthPool.Get(EntityId);
-                if (aHealth.IsDead) return;
+                return;
             }
             
             ref var aInput = ref inputPool.Get(EntityId);
@@ -187,6 +199,7 @@ namespace Actor
                 
                 if (input.IsAttackHeld && shotCountPass && shotCooldownPass)
                 {
+                    isAttacking = true;
                     isAttackTriggered = true;
                 }
             }
@@ -253,15 +266,20 @@ namespace Actor
         
         private void ResetBurst()
         {
-            if (weapon == null) return;
-            
-            isAttackTriggered = false;
-            holdTransform = false;
-            burstCooldownTimer = weapon.burstCooldown;
-            projectileCooldownTimer = 0f;
-            burstCount++;
-            scatterAngle = 0f;
             projectileCount = 0;
+            projectileCooldownTimer = 0f;
+            
+            burstCount++;
+            burstCooldownTimer = weapon.burstCooldown;
+            
+            scatterAngle = 0f;
+            
+            holdTransform = false;
+            holdSpawnPos = Vector3.zero;
+            holdSpawnRot = Quaternion.identity;
+            
+            isAttacking = false;
+            isAttackTriggered = false;
             
             // switch direction for single origin cone scatter with ping pong cycle mode (who needs that anyways?)
             if (origins.Length == 1 && weapon.scatterType == ScatterType.Cone && weapon.originCycleMode == OriginCycleMode.PingPong)

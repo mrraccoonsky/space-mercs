@@ -4038,7 +4038,7 @@ MonoBehaviour:
   screenSides: 14
   groundLayerMask:
     serializedVersion: 2
-    m_Bits: 192
+    m_Bits: 448
 --- !u!1 &1143124704
 GameObject:
   m_ObjectHideFlags: 0

@@ -124,6 +124,8 @@ namespace Actor
                 
                 aHealth.IsOnCooldown = hitTimer > 0f;
                 aHealth.IsHit = isHit;
+                
+                aHealth.LastHitIgnoreFx = lastHitIgnoreFx;
                 aHealth.LastHitPos = lastHitPos;
                 aHealth.LastHitDir = lastHitDir;
                 

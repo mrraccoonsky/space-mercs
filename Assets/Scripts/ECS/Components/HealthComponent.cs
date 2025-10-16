@@ -8,6 +8,7 @@ namespace ECS.Components
     {
         public AHealth Module;
         public GlobalTag Tag;
+        
         public BoxCollider HitBox;
         
         public float CurrentHealth;
@@ -15,10 +16,10 @@ namespace ECS.Components
 
         public bool IsOnCooldown;
         public bool IsHit;
-        public bool LastHitIgnoreFx;
         
         public Vector3 LastHitPos;
         public Vector3 LastHitDir;
+        public bool LastHitIgnoreFx;
         
         public bool IsDead;
         public float DeadTimer;

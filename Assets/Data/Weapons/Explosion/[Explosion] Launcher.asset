@@ -10,18 +10,21 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7b5cd22a89c6d124fa1ccb9325e035d7, type: 3}
-  m_Name: '[Explosion] Default'
+  m_Name: '[Explosion] Launcher'
   m_EditorClassIdentifier: Assembly-CSharp::Data.Explosion.ExplosionConfig
   enableFriendlyFire: 1
   canHitOnCooldown: 0
   ignoreHitFx: 0
+  cloneScale: 1
   cloneDamage: 1
-  damage: 25
+  clonePush: 1
   explosionPrefab: {fileID: 3905571746805792301, guid: ff834993ba42c734c81e4a57620770bc, type: 3}
+  scale: 1
+  damage: 25
+  scaleAffectsRadius: 1
   radius: 2
   lifetime: 1
   hitAreaLifetime: 0.1
   distanceMult: 0.5
-  clonePush: 1
   pushForce: 1
   pushUpwardsMod: 1

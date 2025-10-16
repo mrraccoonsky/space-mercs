@@ -196,24 +196,25 @@ MonoBehaviour:
   hitboxParent: {fileID: 6889435858857866265}
   hitboxOffset: {x: 0, y: 0, z: 0}
   hitboxRotation: {x: 0, y: 0, z: 0}
-  hitboxSize: {x: 0.25, y: 0.25, z: 0.25}
+  hitboxSize: {x: 0.15, y: 0.15, z: 0.25}
   particle: {fileID: 0}
   hitParticlePrefab: {fileID: 0}
-  tag: 0
+  globalTag: 0
   enableFriendlyFire: 0
   canHitOnCooldown: 0
   ignoreHitFx: 0
-  hitboxEnableDelay: 0
+  scale: 0
   damage: 0
   speed: 0
   lifetime: 0
   penetrationCount: 0
+  hitboxEnableDelay: 0
   pushForce: 0
   pushUpwardsMod: 0
   enableRigidbody: 0
   rbHitObstacles: 0
   rbTilt: 0
-  rbUpwardsMod: 0
+  rbTorque: 0
   explosionConfig: {fileID: 0}
 --- !u!1 &6090110894885507988
 GameObject:

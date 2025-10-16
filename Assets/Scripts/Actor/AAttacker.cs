@@ -24,8 +24,9 @@ namespace Actor
         [ReadOnly, SerializeField] private Transform[] origins;
         [ReadOnly, SerializeField] private int currentOriginIndex;
         [ReadOnly, SerializeField] private int currentCycleDirection = 1;
-        
+
         [Space]
+        [ReadOnly, SerializeField] private bool holdTransform;
         [ReadOnly, SerializeField] private Vector3 holdSpawnPos;
         [ReadOnly, SerializeField] private Quaternion holdSpawnRot;
         
@@ -87,9 +88,10 @@ namespace Actor
         public void Reset()
         {
             if (!enabled) return;
-            
+
             holdSpawnPos = Vector3.zero;
             holdSpawnRot = Quaternion.identity;
+            holdTransform = false;
             
             attackCooldownTimer = 0f;
          
@@ -162,15 +164,13 @@ namespace Actor
             }
             
             // update origins root positions and rotation (hold logics)
-            if (holdSpawnPos != Vector3.zero && holdSpawnRot != Quaternion.identity)
+            if (holdTransform)
             {
-                originsRoot.transform.position = holdSpawnPos;
-                originsRoot.transform.rotation = holdSpawnRot;
+                originsRoot.SetPositionAndRotation(holdSpawnPos, holdSpawnRot);
             }
             else
             {
-                originsRoot.transform.localPosition = Vector3.zero;
-                originsRoot.transform.localRotation = Quaternion.identity;
+                originsRoot.SetLocalPositionAndRotation(Vector3.zero, Quaternion.identity);
             }
 
             if (!isAttackTriggered)
@@ -232,6 +232,7 @@ namespace Actor
                 {
                     holdSpawnPos = originsRoot.transform.position;
                     holdSpawnRot = originsRoot.transform.rotation;
+                    holdTransform = true;
                 }
 
                 // handle single- or multi-shot based on projectile cooldown
@@ -255,15 +256,13 @@ namespace Actor
             if (weapon == null) return;
             
             isAttackTriggered = false;
+            holdTransform = false;
             burstCooldownTimer = weapon.burstCooldown;
             projectileCooldownTimer = 0f;
             burstCount++;
             scatterAngle = 0f;
             projectileCount = 0;
             
-            holdSpawnPos = Vector3.zero;
-            holdSpawnRot = Quaternion.identity;
-
             // switch direction for single origin cone scatter with ping pong cycle mode (who needs that anyways?)
             if (origins.Length == 1 && weapon.scatterType == ScatterType.Cone && weapon.originCycleMode == OriginCycleMode.PingPong)
             {

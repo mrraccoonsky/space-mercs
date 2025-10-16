@@ -41,6 +41,7 @@ namespace Data.Weapon
         [BoxGroup("Origin Cycle Mode")] public bool switchAfterEachShot;
         
         [BoxGroup("Projectile")] public GameObject projectilePrefab;
+        [BoxGroup("Projectile")] public float scale = 1f;
         [BoxGroup("Projectile")] public float damage = 10f;
         [BoxGroup("Projectile")] public float speed = 10f;
         [BoxGroup("Projectile")] public float lifetime = 1f;
@@ -50,7 +51,7 @@ namespace Data.Weapon
         [BoxGroup("Rigidbody")] public bool enableRigidbody;
         [BoxGroup("Rigidbody"), ShowIf("enableRigidbody")] public bool rbHitObstacles;
         [BoxGroup("Rigidbody"), ShowIf("enableRigidbody")] public float rbTilt = 1f;
-        [BoxGroup("Rigidbody"), ShowIf("enableRigidbody")] public float rbUpwardsMod = 1f;
+        [BoxGroup("Rigidbody"), ShowIf("enableRigidbody")] public float rbTorque;
         
         [BoxGroup("Ragdoll")] public float pushForce = 1f;
         [BoxGroup("Ragdoll")] public float pushUpwardsMod = 1f;

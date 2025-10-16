@@ -109,7 +109,7 @@ ParticleSystem:
       m_RotationOrder: 4
   moveWithTransform: 0
   moveWithCustomTransform: {fileID: 0}
-  scalingMode: 1
+  scalingMode: 0
   randomSeed: 0
   InitialModule:
     serializedVersion: 3
@@ -4950,12 +4950,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4196e914186e46f2ac003a4ce6eb7e43, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ECS.Bridges.ExplosionBridge
+  globalTag: 0
   hitAreaParent: {fileID: 6889435858857866265}
   hitAreaOffset: {x: 0, y: 0, z: 0}
   hitAreaRadius: 1
   enableFriendlyFire: 0
   canHitOnCooldown: 0
   ignoreHitFx: 0
+  scale: 0
   damage: 0
   radius: 0
   lifetime: 0
@@ -9878,7 +9880,7 @@ GameObject:
   - component: {fileID: 2087263337826414114}
   - component: {fileID: 7674248506210678607}
   m_Layer: 29
-  m_Name: Main_01
+  m_Name: Trails
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -9974,7 +9976,7 @@ ParticleSystem:
       m_RotationOrder: 4
   moveWithTransform: 0
   moveWithCustomTransform: {fileID: 0}
-  scalingMode: 1
+  scalingMode: 0
   randomSeed: 0
   InitialModule:
     serializedVersion: 3

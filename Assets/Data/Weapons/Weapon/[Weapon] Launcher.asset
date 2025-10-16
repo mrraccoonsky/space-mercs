@@ -21,20 +21,21 @@ MonoBehaviour:
   burstCount: 2
   burstCooldown: 0.3
   holdBurstTransform: 0
-  scatterAngle: 5
+  scatterAngle: 3
   scatterType: 1
   originCycleMode: 0
   switchAfterEachShot: 0
   projectilePrefab: {fileID: 3905571746805792301, guid: d20658a0593603f4ca121dbc6bbf5b9b, type: 3}
-  hitboxEnableDelay: 0
+  scale: 1
   damage: 50
   speed: 8
   lifetime: 1.5
   penetrationCount: 0
+  hitboxEnableDelay: 0
   enableRigidbody: 1
   rbHitObstacles: 0
   rbTilt: -20
-  rbUpwardsMod: -40
+  rbTorque: 0.4
   pushForce: 50
   pushUpwardsMod: 10
   explosionConfig: {fileID: 11400000, guid: b4c85033ffac39047ae2a0111773e0b5, type: 2}

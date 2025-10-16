@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4ab9ac9a19d4897aed165cbd0e68ca0, type: 3}
   m_Name: '[Player] Burner'
   m_EditorClassIdentifier: Assembly-CSharp::Data.Actor.ActorConfig
+  maxHealth: 50
+  hitCooldown: 0.5
   speed: 2.5
   jumpHeight: 1.5
   jumpDelay: 0.1
@@ -25,14 +27,3 @@ MonoBehaviour:
   rotationSpeed: 3
   aimTowardsAttackDirection: 0
   weaponCfg: {fileID: 11400000, guid: 9705ce4d86a3a5d41a7d139b6fd768b3, type: 2}
-  attackCooldown: 0.02
-  holdBurstTransform: 0
-  burstCount: 1
-  burstCooldown: 0.02
-  projectileConfig: {fileID: 11400000, guid: ad17da3b91548d142a15241baaa9663d, type: 2}
-  projectileCount: 20
-  projectileCooldown: 0.04
-  scatterAngle: 0
-  scatterType: 0
-  maxHealth: 50
-  hitCooldown: 0.5

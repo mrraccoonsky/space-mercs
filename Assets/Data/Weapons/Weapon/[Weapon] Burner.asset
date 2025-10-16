@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2334bbdca7be45188d1163a2a40d4d04, type: 3}
   m_Name: '[Weapon] Burner'
   m_EditorClassIdentifier: Assembly-CSharp::Data.Weapon.WeaponConfig
+  enableFriendlyFire: 0
   canHitOnCooldown: 1
   ignoreHitFx: 1
   attackCooldown: 0.02
@@ -25,14 +26,16 @@ MonoBehaviour:
   originCycleMode: 0
   switchAfterEachShot: 0
   projectilePrefab: {fileID: 3905571746805792301, guid: f78f30cf4702eb04c9497ecf3912edf6, type: 3}
+  scale: 1
   damage: 5
   speed: 8
   lifetime: 0.7
   penetrationCount: 0
-  force: 10
-  pushForce: 10
-  upwardsMod: 1
-  pushUpwardsMod: 1
+  hitboxEnableDelay: 0
   enableRigidbody: 0
-  rbForce: 1
-  rbUpwardsMod: 1
+  rbHitObstacles: 0
+  rbTilt: 1
+  rbTorque: 0
+  pushForce: 10
+  pushUpwardsMod: 1
+  explosionConfig: {fileID: 0}

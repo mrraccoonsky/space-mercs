@@ -1,6 +1,9 @@
 using UnityEngine;
 using Data;
 using Data.Explosion;
+using ECS.Components;
+using ECS.Utils;
+using Tools;
 
 namespace ECS.Bridges
 {
@@ -21,8 +24,9 @@ namespace ECS.Bridges
         [ReadOnly, SerializeField] private bool enableFriendlyFire;
         [ReadOnly, SerializeField] private bool canHitOnCooldown;
         [ReadOnly, SerializeField] private bool ignoreHitFx;
-        
+
         [Space]
+        [ReadOnly, SerializeField] private float scale;
         [ReadOnly, SerializeField] private float damage;
         [ReadOnly, SerializeField] private float radius;
         [ReadOnly, SerializeField] private float lifetime;
@@ -33,6 +37,7 @@ namespace ECS.Bridges
         [ReadOnly, SerializeField] private float pushForce;
         [ReadOnly, SerializeField] private float pushUpwardsMod;
 
+        private Transform _t;
         private float _lifeTimer;
         private float _hitAreaLifeTimer;
         
@@ -42,6 +47,7 @@ namespace ECS.Bridges
 
         private void OnDrawGizmosSelected()
         {
+            if (Application.isPlaying) return;
             if (hitAreaParent == null) return;
 
             Gizmos.color = Color.orange;
@@ -52,6 +58,8 @@ namespace ECS.Bridges
 
         public void Reset()
         {
+            UpdateScaling();
+            
             _lifeTimer = 0f;
             _hitAreaLifeTimer = 0f;
             gameObject.SetActive(true);
@@ -61,6 +69,8 @@ namespace ECS.Bridges
         {
             EntityId = entityId;
             World = world;
+
+            _t = transform;
 
             CreateHitArea();
         }
@@ -75,39 +85,32 @@ namespace ECS.Bridges
             enableFriendlyFire = cfg.enableFriendlyFire;
             canHitOnCooldown = cfg.canHitOnCooldown;
             ignoreHitFx = cfg.ignoreHitFx;
-
-            if (!cfg.cloneDamage)
-            {
-                damage = cfg.damage;
-            }
             
-            radius = cfg.radius;
+            scale = cfg.scale;
+            damage = cfg.damage;
+            radius = cfg.scaleAffectsRadius ? cfg.scale * cfg.radius : cfg.radius;
             lifetime = cfg.lifetime;
             hitAreaLifetime = cfg.hitAreaLifetime;
             distanceMult = cfg.distanceMult;
-
-            if (!cfg.clonePush)
-            {
-                pushForce = cfg.pushForce;
-                pushUpwardsMod = cfg.pushUpwardsMod;
-            }
-
-            if (HitArea != null)
-            {
-                HitArea.radius = radius;
-                HitArea.center = hitAreaOffset;
-            }
+            
+            pushForce = cfg.pushForce;
+            pushUpwardsMod = cfg.pushUpwardsMod;
         }
 
-        public void SetDamageValue(float val)
+        public void TryUpdateFromEcsComponent()
         {
-            damage = val;
-        }
-
-        public void SetPushValues(float force, float upwardsMod)
-        {
-            pushForce = force;
-            pushUpwardsMod = upwardsMod;
+            if (!EcsUtils.HasCompInPool<ExplosionComponent>(World, EntityId, out var explosionPool)) return;
+            ref var aExplosion = ref explosionPool.Get(EntityId);
+            
+            scale = aExplosion.Scale;
+            damage = aExplosion.Damage;
+            radius = aExplosion.Radius;
+                
+            pushForce = aExplosion.PushForce;
+            pushUpwardsMod = aExplosion.PushUpwardsMod;
+            
+            UpdateScaling();
+            DebCon.Log("Using data from component", "ExplosionBridge", this);
         }
 
         public bool CheckNeedsDestroy()
@@ -145,6 +148,17 @@ namespace ECS.Bridges
             HitArea.isTrigger = true;
             HitArea.radius = hitAreaRadius;
             HitArea.center = hitAreaOffset;
+        }
+        
+        private void UpdateScaling()
+        {
+            _t.localScale = Vector3.one * scale;
+
+            if (HitArea != null)
+            {
+                HitArea.radius = radius / Mathf.Max(scale, 0.1f);
+                HitArea.center = hitAreaOffset;
+            }
         }
     }
 }

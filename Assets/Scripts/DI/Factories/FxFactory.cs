@@ -15,7 +15,7 @@ namespace DI.Factories
             _poolService = poolService;
         }
         
-        public ParticleSystem Create(GameObject prefab, Vector3 position, Quaternion rotation)
+        public ParticleSystem Create(GameObject prefab, Vector3 position, Quaternion rotation, Vector3 scale)
         {
             var fx = _poolService.Get<ParticleSystem>(prefab);
             if (fx == null)
@@ -28,6 +28,7 @@ namespace DI.Factories
             // _container.Inject(fx);
             
             fx.transform.SetPositionAndRotation(position, rotation);
+            fx.transform.localScale = scale;
             return fx;
         }
     }

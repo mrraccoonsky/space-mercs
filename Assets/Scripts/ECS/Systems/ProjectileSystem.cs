@@ -159,7 +159,7 @@ namespace ECS.Systems
                     ? projectilePool.Get(entityId).Tag
                     : GlobalTag.Default;
                 
-                SpawnExplosion(bridge.ExplosionConfig, tag, bridge.transform.position, entityId);
+                SpawnExplosion(bridge.ExplosionConfig, tag, bridge.Position, entityId);
             }
             
             bridge.gameObject.SetActive(false);
@@ -167,19 +167,18 @@ namespace ECS.Systems
             _entitiesToDestroy.Add(entityId);
         }
         
-        private void SpawnExplosion(ExplosionConfig cfg, GlobalTag tag, Vector3 pos, int projectileEntityId = -1)
+        private ExplosionBridge SpawnExplosion(ExplosionConfig cfg, GlobalTag tag, Vector3 pos, int projectileEntityId = -1)
         {
-            if (cfg == null) return;
+            if (cfg == null) return null;
             
             var eBridge = _projectileService.SpawnExplosion(cfg, tag, pos);
-            
-            if (eBridge == null) return;
-            if (projectileEntityId == -1) return;
+            if (eBridge == null) return null;
             
             var explosionPool = _world.GetPool<ExplosionComponent>();
             ref var aExplosion = ref explosionPool.Get(eBridge.EntityId);
             
-            if (EcsUtils.HasCompInPool<ProjectileComponent>(_world, projectileEntityId, out var projectilePool))
+            // clone necessary values if necessary
+            if (projectileEntityId != -1 && EcsUtils.HasCompInPool<ProjectileComponent>(_world, projectileEntityId, out var projectilePool))
             {
                 ref var aProjectile = ref projectilePool.Get(projectileEntityId);
                 
@@ -190,22 +189,48 @@ namespace ECS.Systems
                     // DebCon.Log($"Cloned hit entities from projectile with id {projectileEntityId} => {eBridge.gameObject.name}", "ProjectileSystem", eBridge.gameObject);
                 }
                 
-                // clone necessary values if necessary
+                var needsUpdate = false;
+                
+                if (cfg.cloneScale)
+                {
+                    var scale = aProjectile.Scale;
+                    aExplosion.Scale = scale;
+
+                    var radius = cfg.scaleAffectsRadius ? scale * cfg.radius : cfg.radius;
+                    aExplosion.Radius = radius;
+                    
+                    needsUpdate = true;
+                    // DebCon.Log($"Cloned SCALE from projectile with id {projectileEntityId} => {eBridge.gameObject.name}", "ProjectileSystem", eBridge.gameObject);
+                }
+                
                 if (cfg.cloneDamage)
                 {
-                    eBridge.SetDamageValue(aProjectile.Damage);
-                    aExplosion.Damage = aProjectile.Damage;
-                    // DebCon.Log($"Cloned damage value from projectile with id {projectileEntityId} => {eBridge.gameObject.name}", "ProjectileSystem", eBridge.gameObject);
+                    var damage = aProjectile.Damage;
+                    aExplosion.Damage = damage;
+
+                    needsUpdate = true;
+                    // DebCon.Log($"Cloned DAMAGE from projectile with id {projectileEntityId} => {eBridge.gameObject.name}", "ProjectileSystem", eBridge.gameObject);
                 }
 
                 if (cfg.clonePush)
                 {
-                    eBridge.SetPushValues(aProjectile.PushForce, aProjectile.PushUpwardsMod);
-                    aExplosion.PushForce = aProjectile.PushForce;
-                    aExplosion.PushUpwardsMod = aProjectile.PushUpwardsMod;
-                    // DebCon.Log($"Cloned push values from projectile with id {projectileEntityId} => {eBridge.gameObject.name}", "ProjectileSystem", eBridge.gameObject);
+                    var pushForce = aProjectile.PushForce;
+                    aExplosion.PushForce = pushForce;
+
+                    var pushUpwardsMod = aProjectile.PushUpwardsMod;
+                    aExplosion.PushUpwardsMod = pushUpwardsMod;
+
+                    needsUpdate = true;
+                    // DebCon.Log($"Cloned PUSH VALUES from projectile with id {projectileEntityId} => {eBridge.gameObject.name}", "ProjectileSystem", eBridge.gameObject);
+                }
+
+                if (needsUpdate)
+                {
+                    eBridge.TryUpdateFromEcsComponent();
                 }
             }
+            
+            return eBridge;
         }
         
         private void DestroyExplosion(ExplosionBridge bridge, int entityId)

@@ -26,15 +26,16 @@ MonoBehaviour:
   originCycleMode: 0
   switchAfterEachShot: 0
   projectilePrefab: {fileID: 3905571746805792301, guid: e335959515330b446a260f1be62b5000, type: 3}
-  hitboxEnableDelay: 0
+  scale: 1
   damage: 10
   speed: 15
   lifetime: 0.6
   penetrationCount: 1
+  hitboxEnableDelay: 0
   enableRigidbody: 0
   rbHitObstacles: 0
   rbTilt: 1
-  rbUpwardsMod: 1
+  rbTorque: 0
   pushForce: 30
   pushUpwardsMod: -5
   explosionConfig: {fileID: 0}

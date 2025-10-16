@@ -34,7 +34,7 @@ namespace Actor
         [SerializeField] private float duration = 0.2f;
         [SerializeField] private HitEffectData[] effects;
         
-        private IFXService _fxService;
+        private IFxService _fxService;
         private float _timer = -1f;
         
         public bool IsEnabled { get; private set; }
@@ -42,7 +42,7 @@ namespace Actor
         public EcsWorld World { get; private set;  }
         
         [Inject]
-        public void Construct(IFXService fxService)
+        public void Construct(IFxService fxService)
         {
             _fxService = fxService;
         }
@@ -154,10 +154,12 @@ namespace Actor
             if (!EcsUtils.HasCompInPool<HealthComponent>(World, EntityId, out var healthPool)) return;
 
             var aHealth = healthPool.Get(EntityId);
+            if (aHealth.LastHitIgnoreFx) return;
+            
             var lookDir = aHealth.LastHitDir;
             lookDir.y = 0f;
                 
-            _fxService.Spawn(hitFxPrefab, aHealth.LastHitPos, Quaternion.LookRotation(lookDir));
+            _fxService.Spawn(hitFxPrefab, aHealth.LastHitPos, Quaternion.LookRotation(lookDir), Vector3.one);
         }
 
         private void UpdateHitEffects()

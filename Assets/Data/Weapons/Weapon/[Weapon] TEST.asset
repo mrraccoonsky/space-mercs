@@ -12,6 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2334bbdca7be45188d1163a2a40d4d04, type: 3}
   m_Name: '[Weapon] TEST'
   m_EditorClassIdentifier: Assembly-CSharp::Data.Weapon.WeaponConfig
+  enableFriendlyFire: 0
   canHitOnCooldown: 0
   ignoreHitFx: 0
   attackCooldown: 2
@@ -25,14 +26,16 @@ MonoBehaviour:
   originCycleMode: 2
   switchAfterEachShot: 0
   projectilePrefab: {fileID: 3905571746805792301, guid: 8aa46c1d1b7dd114685432a73ad06eba, type: 3}
+  scale: 1
   damage: 10
   speed: 20
   lifetime: 0.35
   penetrationCount: 0
-  force: 15
-  pushForce: 15
-  upwardsMod: 0.5
-  pushUpwardsMod: 0.5
+  hitboxEnableDelay: 0
   enableRigidbody: 0
-  rbForce: 1
-  rbUpwardsMod: 1
+  rbHitObstacles: 0
+  rbTilt: 1
+  rbTorque: 0
+  pushForce: 15
+  pushUpwardsMod: 0.5
+  explosionConfig: {fileID: 0}

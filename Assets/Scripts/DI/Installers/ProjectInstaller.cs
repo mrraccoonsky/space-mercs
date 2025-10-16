@@ -37,7 +37,7 @@ namespace DI.Installers
             Container.Bind<IPoolService>().To<PoolService>().AsSingle();
             Container.Bind<IActorSpawnService>().To<ActorSpawnService>().AsSingle();
             Container.Bind<IProjectileService>().To<ProjectileService>().AsSingle();
-            Container.Bind<IFXService>().To<FxService>().AsSingle();
+            Container.Bind<IFxService>().To<FxService>().AsSingle();
             
             // todo: make it changeable in runtime
             Container.Bind<IInputService>().To<KeyboardMouseInputService>().AsSingle();

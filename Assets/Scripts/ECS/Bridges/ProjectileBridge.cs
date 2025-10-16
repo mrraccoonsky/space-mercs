@@ -25,7 +25,8 @@ namespace ECS.Bridges
 
         [Header("Visuals")]
         [SerializeField] private ParticleSystem particle;
-        [SerializeField] private GameObject hitParticlePrefab;
+        [SerializeField] private GameObject hitFxPrefab;
+        [SerializeField] private bool scaleAffectsHitFx;
 
         [Space]
         [ReadOnly, SerializeField] private GlobalTag globalTag;
@@ -33,7 +34,8 @@ namespace ECS.Bridges
         [ReadOnly, SerializeField] private bool canHitOnCooldown;
         [ReadOnly, SerializeField] private bool ignoreHitFx;
 
-        [Space] 
+        [Space]
+        [ReadOnly, SerializeField] private float scale;
         [ReadOnly, SerializeField] private float damage;
         [ReadOnly, SerializeField] private float speed;
         [ReadOnly, SerializeField] private float lifetime;
@@ -48,12 +50,12 @@ namespace ECS.Bridges
         [ReadOnly, SerializeField] private bool enableRigidbody;
         [ReadOnly, SerializeField, ShowIf("enableRigidbody")] private bool rbHitObstacles;
         [ReadOnly, SerializeField, ShowIf("enableRigidbody")] private float rbTilt;
-        [ReadOnly, SerializeField, ShowIf("enableRigidbody")] private float rbUpwardsMod;
+        [ReadOnly, SerializeField, ShowIf("enableRigidbody")] private float rbTorque;
         
         [Space]
         [ReadOnly, SerializeField] private ExplosionConfig explosionConfig;
         
-        private IFXService _fxService;
+        private IFxService _fxService;
         
         private Transform _t;
         private Collider _collider;
@@ -65,11 +67,13 @@ namespace ECS.Bridges
         public int EntityId { get; private set; }
         public EcsWorld World { get; private set; }
         public BoxCollider Hitbox { get; private set; }
-        
+
+        public Vector3 Position => _t.position;
         public ExplosionConfig ExplosionConfig => explosionConfig;
 
         private void OnDrawGizmosSelected()
         {
+            if (Application.isPlaying) return;
             if (hitboxParent == null) return;
             
             Gizmos.color = Color.orange;
@@ -83,7 +87,7 @@ namespace ECS.Bridges
         
         // callers: ProjectileFactory -> ProjectileService
         [Inject]
-        public void Construct(IFXService fxService)
+        public void Construct(IFxService fxService)
         {
             _fxService = fxService;
         }
@@ -102,10 +106,12 @@ namespace ECS.Bridges
 
         public void Reset()
         {
+            _t.localScale = Vector3.one * scale;
+            
             _lifeTimer = 0f;
             _penetrationCount = 0;
             gameObject.SetActive(true);
-
+            
             if (rb != null)
             {
                 if (enableRigidbody)
@@ -120,7 +126,7 @@ namespace ECS.Bridges
                     rb.angularVelocity = Vector3.zero;
                 
                     rb.AddForce(_t.forward * speed, ForceMode.Impulse);
-                    rb.AddTorque(_t.right * rbUpwardsMod * -0.01f, ForceMode.Force);
+                    rb.AddRelativeTorque(Vector3.right * rbTorque, ForceMode.Force);
                 }
                 else
                 {
@@ -156,20 +162,21 @@ namespace ECS.Bridges
             enableFriendlyFire = cfg.enableFriendlyFire;
             canHitOnCooldown = cfg.canHitOnCooldown;
             ignoreHitFx = cfg.ignoreHitFx;
-            
+                
+            scale = cfg.scale;
             damage = cfg.damage;
             speed = cfg.speed;
             lifetime = cfg.lifetime;
             penetrationCount = cfg.penetrationCount;
             hitboxEnableDelay = cfg.hitboxEnableDelay;
-            
-            pushForce = cfg.pushForce;
-            pushUpwardsMod = cfg.pushUpwardsMod;
 
             enableRigidbody = cfg.enableRigidbody;
             rbHitObstacles = cfg.rbHitObstacles;
             rbTilt = cfg.rbTilt;
-            rbUpwardsMod = cfg.rbUpwardsMod;
+            rbTorque = cfg.rbTorque;
+            
+            pushForce = cfg.pushForce;
+            pushUpwardsMod = cfg.pushUpwardsMod;
 
             explosionConfig = cfg.explosionConfig;
             
@@ -213,9 +220,10 @@ namespace ECS.Bridges
         {
             _penetrationCount++;
             
-            if (hitParticlePrefab != null)
+            if (hitFxPrefab != null)
             {
-                _fxService.Spawn(hitParticlePrefab, _t.position, _t.rotation);
+                var fxScale = scaleAffectsHitFx ? _t.localScale : Vector3.one;
+                _fxService.Spawn(hitFxPrefab, _t.position, _t.rotation, fxScale);
             }
         }
         
@@ -223,7 +231,7 @@ namespace ECS.Bridges
         {
             if (rb != null)
             {
-                var radius = Mathf.Max(Hitbox.size.x, Hitbox.size.y, Hitbox.size.z);
+                var radius = Mathf.Max(Hitbox.size.x, Hitbox.size.y, Hitbox.size.z) * scale;
                 var center = Hitbox.bounds.center;
                 var hits = Physics.OverlapSphereNonAlloc(center, radius, _hits, obstacleLayerMask);
 

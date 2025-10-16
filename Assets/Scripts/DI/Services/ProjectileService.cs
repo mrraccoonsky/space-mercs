@@ -41,7 +41,8 @@ namespace DI.Services
             
             aProjectile.CanHitOnCooldown = cfg.canHitOnCooldown;
             aProjectile.IgnoreHitFx = cfg.ignoreHitFx;
-            
+
+            aProjectile.Scale = cfg.scale;
             aProjectile.Damage = cfg.damage;
             aProjectile.PushForce = cfg.pushForce; 
             aProjectile.PushUpwardsMod = cfg.pushUpwardsMod;
@@ -77,15 +78,15 @@ namespace DI.Services
             
             aExplosion.CanHitOnCooldown = cfg.canHitOnCooldown;
             aExplosion.IgnoreHitFx = cfg.ignoreHitFx;
+            aExplosion.DistanceMult = cfg.distanceMult;
             
             // those values can be modded in ProjectileSystem if
-            // cfg.cloneDamage or cfg.clonePush are true
+            // cfg.clone*** are true
+            aExplosion.Scale = cfg.scale;
             aExplosion.Damage = cfg.damage;
+            aExplosion.Radius = cfg.scaleAffectsRadius ? cfg.scale * cfg.radius : cfg.radius;
             aExplosion.PushForce = cfg.pushForce;
             aExplosion.PushUpwardsMod = cfg.pushUpwardsMod;
-            
-            aExplosion.Radius = cfg.radius;
-            aExplosion.DistanceMult = cfg.distanceMult;
             
             bridge.Init(entityId, _world);
             bridge.SetTag(globalTag);

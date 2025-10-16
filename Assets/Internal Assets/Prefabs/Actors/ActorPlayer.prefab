@@ -4899,6 +4899,7 @@ MonoBehaviour:
   origins: []
   currentOriginIndex: 0
   currentCycleDirection: 1
+  holdTransform: 0
   holdSpawnPos: {x: 0, y: 0, z: 0}
   holdSpawnRot: {x: 0, y: 0, z: 0, w: 0}
   scatterAngle: 0

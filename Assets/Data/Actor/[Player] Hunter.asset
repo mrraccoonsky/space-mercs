@@ -26,4 +26,4 @@ MonoBehaviour:
   targetMoveSpeed: 50
   rotationSpeed: 8
   aimTowardsAttackDirection: 0
-  weaponCfg: {fileID: 11400000, guid: a089d81518ae76645aea6ab02463b78f, type: 2}
+  weaponCfg: {fileID: 11400000, guid: 09e3b68fd51b1af449bd102d9996378f, type: 2}

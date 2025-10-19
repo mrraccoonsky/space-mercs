@@ -84,8 +84,6 @@ namespace Actor
             // add component to pool
             var attackerPool = world.GetPool<AttackerComponent>();
             attackerPool.Add(entityId);
-            
-            SyncEcsState();
         }
         
         public void Reset()
@@ -360,16 +358,16 @@ namespace Actor
         {
             if (weapon == null) return 0f;
             
-            return weapon.scatterAngle / Mathf.Max(1, weapon.projectileCount - 1);
+            return weapon.scatterAngle / Mathf.Max(1, weapon.projectileCount);
         }
         
-        private float GetScatterInitAngle(float signleStep)
+        private float GetScatterInitAngle(float singleStep)
         {
             if (weapon == null) return 0f;
             
             return weapon.scatterType switch
             {
-                ScatterType.Cone => -signleStep * 0.5f * (weapon.projectileCount - 1) * currentCycleDirection,
+                ScatterType.Cone => -singleStep * 0.5f * (weapon.projectileCount - 1) * currentCycleDirection,
                 ScatterType.Random => Random.Range(-weapon.scatterAngle * 0.5f, weapon.scatterAngle * 0.5f),
                 _ => 0f
             };

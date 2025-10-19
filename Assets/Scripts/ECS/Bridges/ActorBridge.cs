@@ -46,28 +46,6 @@ namespace ECS.Bridges
             OnDisabled?.Invoke(this);
         }
         
-        public void Reset()
-        {
-            foreach (var module in _modules)
-            {
-                module.Reset();
-            }
-            
-            SyncEcsState();
-            gameObject.SetActive(true);
-        }
-
-        public void SetTag(GlobalTag globalTag)
-        {
-            this.globalTag = globalTag;
-            
-            UpdateModules();
-            foreach (var module in _modules)
-            {
-                module.SetTag(globalTag);
-            }
-        }
-        
         public void Init(int entityId, EcsWorld world)
         {
             // init ecs
@@ -94,8 +72,29 @@ namespace ECS.Bridges
                 module.Init(config, EntityId, World);
             }
             
-            SyncEcsState();
             DebCon.Log($"{name}:{EntityId} Init done!", "ActorBridge", gameObject);
+        }
+        
+        public void Reset()
+        {
+            foreach (var module in _modules)
+            {
+                module.Reset();
+            }
+            
+            SyncEcsState();
+            gameObject.SetActive(true);
+        }
+        
+        public void SetTag(GlobalTag globalTag)
+        {
+            this.globalTag = globalTag;
+            
+            UpdateModules();
+            foreach (var module in _modules)
+            {
+                module.SetTag(globalTag);
+            }
         }
         
         public void Tick(float dt)

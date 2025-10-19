@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using UnityEngine;
 using Data;
 
 namespace ECS.Components
@@ -10,6 +11,7 @@ namespace ECS.Components
         public ExplosionBridge Bridge;
         public GlobalTag Tag;
         
+        public SphereCollider HitArea;
         public HashSet<int> HitEntities;
         
         public bool CanHitOnCooldown;
@@ -19,6 +21,9 @@ namespace ECS.Components
         public float Damage;
         public float Radius;
         public float DistanceMult;
+        
+        public float KnockbackDuration;
+        public float KnockbackForce;
         
         public float PushForce;
         public float PushUpwardsMod;

@@ -93,7 +93,7 @@ namespace ECS.Systems
                     {
                         case AIBehaviorState.Idle:
                         case AIBehaviorState.Patrol:
-                            aPerception.LastKnownTargetPosition = aHealth.LastHitPos - aHealth.LastHitDir;
+                            aPerception.LastKnownTargetPosition = aHealth.LastHit.Pos - aHealth.LastHit.Dir;
                             stateMachine.SwitchState(AIBehaviorState.Chase);
                             return;
                     }

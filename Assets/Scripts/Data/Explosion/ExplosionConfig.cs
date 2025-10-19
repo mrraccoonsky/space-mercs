@@ -15,6 +15,7 @@ namespace Data.Explosion
         [Space]
         [BoxGroup("General")] public bool cloneScale;
         [BoxGroup("General")] public bool cloneDamage;
+        [BoxGroup("General")] public bool cloneKnockback;
         [BoxGroup("General")] public bool clonePush;
 
         [BoxGroup("Explosion")] public GameObject explosionPrefab;
@@ -25,6 +26,10 @@ namespace Data.Explosion
         [BoxGroup("Explosion")] public float lifetime = 1f;
         [BoxGroup("Explosion")] public float hitAreaLifetime = 0.5f;
         [BoxGroup("Explosion")] public float distanceMult = 1f;
+        
+        [Space]
+        [BoxGroup("Explosion"), HideIf("cloneKnockback")] public float knockbackForce;
+        [BoxGroup("Explosion"), HideIf("cloneKnockback")] public float knockbackDuration;
         
         [BoxGroup("Ragdoll"), HideIf("clonePush")] public float pushForce = 1f;
         [BoxGroup("Ragdoll"), HideIf("clonePush")] public float pushUpwardsMod = 1f;

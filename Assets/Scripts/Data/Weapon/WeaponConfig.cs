@@ -41,16 +41,30 @@ namespace Data.Weapon
         [BoxGroup("Origin Cycle Mode")] public bool switchAfterEachShot;
         
         [BoxGroup("Projectile")] public GameObject projectilePrefab;
+        [BoxGroup("Projectile")] public float tilt;
         [BoxGroup("Projectile")] public float scale = 1f;
         [BoxGroup("Projectile")] public float damage = 10f;
         [BoxGroup("Projectile")] public float speed = 10f;
         [BoxGroup("Projectile")] public float lifetime = 1f;
+        
+        [Space]
+        [BoxGroup("Projectile")] public float knockbackForce;
+        [BoxGroup("Projectile")] public float knockbackDuration;
+        
+        [Space]
         [BoxGroup("Projectile")] public int penetrationCount;
         [BoxGroup("Projectile")] public float hitboxEnableDelay;
         
+        [BoxGroup("Aim")] public bool enableAim;
+        [BoxGroup("Aim"), ShowIf("enableAim")] public bool canReuseTarget;
+        [BoxGroup("Aim"), ShowIf("enableAim")] public float aimDot = 0.1f;
+        [BoxGroup("Aim"), ShowIf("enableAim")] public float aimRange = 10f;
+        [BoxGroup("Aim"), ShowIf("enableAim")] public float aimSpeed = 5f;
+        [BoxGroup("Aim"), ShowIf("enableAim")] public float aimDelay = 0.2f;
+        [BoxGroup("Aim"), ShowIf("enableAim")] public float aimMoveSpeedMult = 1f;
+        
         [BoxGroup("Rigidbody")] public bool enableRigidbody;
         [BoxGroup("Rigidbody"), ShowIf("enableRigidbody")] public bool rbHitObstacles;
-        [BoxGroup("Rigidbody"), ShowIf("enableRigidbody")] public float rbTilt = 1f;
         [BoxGroup("Rigidbody"), ShowIf("enableRigidbody")] public float rbTorque;
         
         [BoxGroup("Ragdoll")] public float pushForce = 1f;

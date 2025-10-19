@@ -36,12 +36,13 @@ namespace Actor
         [Space]
         [ReadOnly, SerializeField] private Vector3 lastHitPos;
         [ReadOnly, SerializeField] private Vector3 lastHitDir;
+        [ReadOnly, SerializeField] private float lastHitKnockbackForce;
+        [ReadOnly, SerializeField] private float lastHitKnockbackDuration;
         [ReadOnly, SerializeField] private float lastHitPushForce;
         [ReadOnly, SerializeField] private float lastHitPushUpwardsMod;
         [ReadOnly, SerializeField] private bool lastHitIgnoreFx;
         
         private BoxCollider _hitbox;
-        
         private float _accumHealthChange;
         
         public bool IsEnabled { get; private set; }
@@ -84,8 +85,6 @@ namespace Actor
             // add component to pool
             var healthPool = world.GetPool<HealthComponent>();
             healthPool.Add(entityId);
-            
-            SyncEcsState();
         }
 
         public void Reset()
@@ -102,6 +101,12 @@ namespace Actor
             deadTimer = -1f;
 
             lastHitPos = Vector3.zero;
+            lastHitDir = Vector3.zero;
+            lastHitKnockbackForce = 0f;
+            lastHitKnockbackDuration = 0f;
+            lastHitPushForce = 0f;
+            lastHitPushUpwardsMod = 0f;
+            lastHitIgnoreFx = false;
         }
 
         public void SetTag(GlobalTag globalTag)
@@ -121,13 +126,29 @@ namespace Actor
                 
                 aHealth.CurrentHealth = currentHealth;
                 aHealth.MaxHealth = maxHealth;
+
+                if (isHit)
+                {
+                    ref var hitData = ref aHealth.LastHit;
+                    
+                    hitData.Pos = lastHitPos;
+                    hitData.Dir = lastHitDir;
+                    
+                    hitData.IgnoreFx = lastHitIgnoreFx;
+                    hitData.KnockbackForce = lastHitKnockbackForce;
+                    hitData.KnockbackDuration = lastHitKnockbackDuration;
+                    hitData.PushForce = lastHitPushForce;
+                    hitData.PushUpwardsMod = lastHitPushUpwardsMod;
+                    
+                    aHealth.LastHit = hitData;
+                }
+                else
+                {
+                    aHealth.LastHit = default;
+                }
                 
                 aHealth.IsOnCooldown = hitTimer > 0f;
                 aHealth.IsHit = isHit;
-                
-                aHealth.LastHitIgnoreFx = lastHitIgnoreFx;
-                aHealth.LastHitPos = lastHitPos;
-                aHealth.LastHitDir = lastHitDir;
                 
                 aHealth.IsDead = isDead;
                 aHealth.DeadTimer = isDead ? deadTimer : -1f;
@@ -210,14 +231,17 @@ namespace Actor
             _accumHealthChange = 0f;
         }
         
-        public void StoreHitData(Vector3 pos, Vector3 dir, float force, float upwardsMod, bool ignoreHitFx)
+        public void StoreHitData(ref HitData data)
         {
-            lastHitPos = pos;
-            lastHitDir = dir;
+            // store it here and then create new struct during SyncEcsState() to be able to debug it in inspector
+            lastHitPos = data.Pos;
+            lastHitDir = data.Dir;
             
-            lastHitPushForce = force;
-            lastHitPushUpwardsMod = upwardsMod;
-            lastHitIgnoreFx = ignoreHitFx;
+            lastHitIgnoreFx = data.IgnoreFx;
+            lastHitKnockbackForce = data.KnockbackForce;
+            lastHitKnockbackDuration = data.KnockbackDuration;
+            lastHitPushForce = data.PushForce;
+            lastHitPushUpwardsMod = data.PushUpwardsMod;
         }
         
         public void ChangeHealth(float value)

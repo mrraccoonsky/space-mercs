@@ -26,15 +26,24 @@ MonoBehaviour:
   originCycleMode: 0
   switchAfterEachShot: 0
   projectilePrefab: {fileID: 3905571746805792301, guid: f78f30cf4702eb04c9497ecf3912edf6, type: 3}
+  tilt: 0
   scale: 1
   damage: 5
   speed: 8
   lifetime: 0.7
+  knockbackForce: 1
+  knockbackDuration: 0.08
   penetrationCount: 0
   hitboxEnableDelay: 0
+  enableAim: 0
+  canReuseTarget: 0
+  aimDot: 0.1
+  aimRange: 10
+  aimSpeed: 5
+  aimDelay: 0.2
+  aimMoveSpeedMult: 1
   enableRigidbody: 0
   rbHitObstacles: 0
-  rbTilt: 1
   rbTorque: 0
   pushForce: 10
   pushUpwardsMod: 1

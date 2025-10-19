@@ -154,12 +154,12 @@ namespace Actor
             if (!EcsUtils.HasCompInPool<HealthComponent>(World, EntityId, out var healthPool)) return;
 
             var aHealth = healthPool.Get(EntityId);
-            if (aHealth.LastHitIgnoreFx) return;
+            if (aHealth.LastHit.IgnoreFx) return;
             
-            var lookDir = aHealth.LastHitDir;
+            var lookDir = aHealth.LastHit.Dir;
             lookDir.y = 0f;
                 
-            _fxService.Spawn(hitFxPrefab, aHealth.LastHitPos, Quaternion.LookRotation(lookDir), Vector3.one);
+            _fxService.Spawn(hitFxPrefab, aHealth.LastHit.Pos, Quaternion.LookRotation(lookDir), Vector3.one);
         }
 
         private void UpdateHitEffects()

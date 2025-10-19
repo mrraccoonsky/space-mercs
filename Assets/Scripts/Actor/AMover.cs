@@ -40,6 +40,7 @@ namespace Actor
 
         [Space]
         [ReadOnly, SerializeField] private float speed;
+        [ReadOnly, SerializeField] private bool canBeKnockedBack;
         
         [Space]
         [ReadOnly, SerializeField] private float jumpHeight;
@@ -61,14 +62,20 @@ namespace Actor
         private bool _isGrounded;
         
         private float _verticalVelocity;
-        private float _jumpCooldownLeft = -1f;
-        private float _jumpDelayLeft = -1f;
+        private float _jumpCooldownTimer = -1f;
+        private float _jumpDelayTimer = -1f;
         
         private bool _isJumpTriggered;
         private bool _isJumpInputReleased = true;
         
         private float _slopeSpeedMult = 1f;
         private float _currentSlopeAngle;
+        
+        // knockback
+        private Vector3 _knockbackDir;
+        private float _knockbackDuration = -1f;
+        private float _knockbackTimer = -1f;
+        private float _knockbackForce;
 
         [Inject] private CameraController _cameraController;
         
@@ -99,8 +106,9 @@ namespace Actor
                 DebCon.Err($"Actor config is null on {gameObject.name}!", "AMover", gameObject);
                 return;
             }
-                
+            
             speed = cfg.speed;
+            canBeKnockedBack = cfg.canBeKnockedBack;
             
             jumpHeight = cfg.jumpHeight;
             jumpDelay = cfg.jumpDelay;
@@ -114,8 +122,6 @@ namespace Actor
             // add component to pool
             var moverPool = world.GetPool<MoverComponent>();
             moverPool.Add(entityId);
-            
-            SyncEcsState();
         }
         
         public void Reset()
@@ -127,14 +133,18 @@ namespace Actor
             
             _verticalVelocity = 0f;
             
-            _jumpCooldownLeft = -1;
-            _jumpDelayLeft = -1;
+            _jumpCooldownTimer = -1f;
+            _jumpDelayTimer = -1f;
             
             _isJumpTriggered = false;
             _isJumpInputReleased = true;
             
             _slopeSpeedMult = 1f;
             _currentSlopeAngle = 0f;
+
+            _knockbackDuration = -1f;
+            _knockbackTimer = -1f;
+            _knockbackDir = Vector3.zero;
         }
         
         public void SyncEcsState()
@@ -161,7 +171,7 @@ namespace Actor
                 ref var aMovement = ref moverPool.Get(EntityId);
                 aMovement.Velocity = new Vector3(move.x, _verticalVelocity, move.z);
                 aMovement.IsGrounded = _isGrounded;
-                aMovement.HasJumped = _isJumpTriggered && Mathf.Approximately(_jumpDelayLeft, jumpDelay);
+                aMovement.HasJumped = _isJumpTriggered && Mathf.Approximately(_jumpDelayTimer, jumpDelay);
             }
         }
         
@@ -199,6 +209,9 @@ namespace Actor
             _slopeSpeedMult = CalculateSlopeSpeedMultiplier(_moveDir);
             var move = _moveDir * (speed * _slopeSpeedMult * dt);
             move.y = _verticalVelocity * dt;
+
+            var knockback = CalculateKnockback(dt);
+            move += knockback;
             
             _controller.Move(move);
             
@@ -257,6 +270,37 @@ namespace Actor
             // use normal speed on flat ground
             return 1f;
         }
+
+        private Vector3 CalculateKnockback(float dt)
+        {
+            if (!canBeKnockedBack) return Vector3.zero;
+            
+            if (EcsUtils.HasCompInPool<HealthComponent>(World, EntityId, out var healthPool))
+            {
+                ref var aHealth = ref healthPool.Get(EntityId);
+
+                if (aHealth.IsHit)
+                {
+                    ref var hitData = ref aHealth.LastHit;
+                    if (hitData.KnockbackDuration == 0f) return Vector3.zero;
+                    
+                    _knockbackDir = hitData.Dir;
+                    _knockbackForce = hitData.KnockbackForce;
+                    _knockbackDuration = hitData.KnockbackDuration;
+                    _knockbackTimer = _knockbackDuration;
+                }
+            }
+            
+            if (_knockbackTimer > 0f)
+            {
+                _knockbackTimer -= dt;
+
+                var currentForce = _knockbackForce * _knockbackTimer / _knockbackDuration;
+                return _knockbackDir * currentForce * dt;
+            }
+
+            return Vector3.zero;
+        }
         
         private void HandleJump(InputComponent input, float dt)
         {
@@ -272,27 +316,27 @@ namespace Actor
                 _isJumpInputReleased = true;
             }
 
-            if (_jumpDelayLeft > 0)
+            if (_jumpDelayTimer > 0)
             {
                 canJump = false;
-                _jumpDelayLeft -= dt;
+                _jumpDelayTimer -= dt;
             }
 
-            if (_jumpCooldownLeft > 0)
+            if (_jumpCooldownTimer > 0)
             {
                 canJump = false;
-                _jumpCooldownLeft -= dt;
+                _jumpCooldownTimer -= dt;
             }
 
             if (!canJump) return;
             
-            _jumpDelayLeft = 0;
-            _jumpCooldownLeft = 0;
+            _jumpDelayTimer = 0;
+            _jumpCooldownTimer = 0;
 
             if (_isJumpTriggered)
             {
                 _isJumpTriggered = false;
-                _jumpCooldownLeft = jumpCooldown;
+                _jumpCooldownTimer = jumpCooldown;
                 
                 var jumpForce = Mathf.Sqrt(2f * jumpHeight * Mathf.Abs(Physics.gravity.y * gravityMultiplier));
                 
@@ -306,7 +350,7 @@ namespace Actor
             
             _isJumpInputReleased = false;
             _isJumpTriggered = true;
-            _jumpDelayLeft = jumpDelay;
+            _jumpDelayTimer = jumpDelay;
         }
         
         private void ApplyGravity(float dt)

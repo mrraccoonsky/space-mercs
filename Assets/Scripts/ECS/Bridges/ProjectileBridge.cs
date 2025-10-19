@@ -3,6 +3,8 @@ using Data;
 using Data.Explosion;
 using Data.Weapon;
 using DI.Services;
+using ECS.Components;
+using ECS.Utils;
 
 namespace ECS.Bridges
 {
@@ -36,21 +38,32 @@ namespace ECS.Bridges
 
         [Space]
         [ReadOnly, SerializeField] private float scale;
+        [ReadOnly, SerializeField] private float tilt;
         [ReadOnly, SerializeField] private float damage;
         [ReadOnly, SerializeField] private float speed;
         [ReadOnly, SerializeField] private float lifetime;
+        [ReadOnly, SerializeField] private float knockbackForce;
+        [ReadOnly, SerializeField] private float knockbackDuration;
         [ReadOnly, SerializeField] private int penetrationCount;
         [ReadOnly, SerializeField] private float hitboxEnableDelay;
         
         [Space]
-        [ReadOnly, SerializeField] private float pushForce;
-        [ReadOnly, SerializeField] private float pushUpwardsMod;
+        [ReadOnly, SerializeField] private bool enableAim;
+        [ReadOnly, SerializeField, ShowIf("enableAim")] private bool canReuseTarget;
+        [ReadOnly, SerializeField, ShowIf("enableAim")] private float aimDot;
+        [ReadOnly, SerializeField, ShowIf("enableAim")] private float aimRange;
+        [ReadOnly, SerializeField, ShowIf("enableAim")] private float aimSpeed;
+        [ReadOnly, SerializeField, ShowIf("enableAim")] private float aimDelay;
+        [ReadOnly, SerializeField, ShowIf("enableAim")] private float aimMoveSpeedMult;
         
         [Space]
         [ReadOnly, SerializeField] private bool enableRigidbody;
         [ReadOnly, SerializeField, ShowIf("enableRigidbody")] private bool rbHitObstacles;
-        [ReadOnly, SerializeField, ShowIf("enableRigidbody")] private float rbTilt;
         [ReadOnly, SerializeField, ShowIf("enableRigidbody")] private float rbTorque;
+        
+        [Space]
+        [ReadOnly, SerializeField] private float pushForce;
+        [ReadOnly, SerializeField] private float pushUpwardsMod;
         
         [Space]
         [ReadOnly, SerializeField] private ExplosionConfig explosionConfig;
@@ -58,15 +71,17 @@ namespace ECS.Bridges
         private IFxService _fxService;
         
         private Transform _t;
-        private Collider _collider;
+        private BoxCollider _hitbox;
+        private Collider _collider; // only for rb-based projectiles
+
         private float _lifeTimer;
         private int _penetrationCount;
+        private Vector3 _aimTarget;
         
-        private readonly Collider[] _hits = new Collider[1];
+        private readonly Collider[] _hits = new Collider[1]; // only for rb-based projectiles
      
         public int EntityId { get; private set; }
         public EcsWorld World { get; private set; }
-        public BoxCollider Hitbox { get; private set; }
 
         public Vector3 Position => _t.position;
         public ExplosionConfig ExplosionConfig => explosionConfig;
@@ -91,6 +106,19 @@ namespace ECS.Bridges
         {
             _fxService = fxService;
         }
+        
+        private void OnDrawGizmos()
+        {
+            if (!_t) return;
+            
+            // last known target position / line of sight visualization
+            if (_aimTarget != Vector3.zero)
+            {
+                Gizmos.color = Color.blue;
+                Gizmos.DrawWireCube(_aimTarget, Vector3.one);
+                Gizmos.DrawLine(_t.position, _aimTarget);
+            }
+        }
 
         private void OnDisable()
         {
@@ -102,39 +130,6 @@ namespace ECS.Bridges
             }
 
             SetTrailEnabled(false, true);
-        }
-
-        public void Reset()
-        {
-            _t.localScale = Vector3.one * scale;
-            
-            _lifeTimer = 0f;
-            _penetrationCount = 0;
-            gameObject.SetActive(true);
-            
-            if (rb != null)
-            {
-                if (enableRigidbody)
-                {
-                    var tilt = Quaternion.Euler(rbTilt, 0f, 0f);
-                    var rot = _t.rotation * tilt;
-                    _t.rotation = rot;
-                    rb.rotation = rot;
-                
-                    rb.isKinematic = false;
-                    rb.linearVelocity = Vector3.zero;
-                    rb.angularVelocity = Vector3.zero;
-                
-                    rb.AddForce(_t.forward * speed, ForceMode.Impulse);
-                    rb.AddRelativeTorque(Vector3.right * rbTorque, ForceMode.Force);
-                }
-                else
-                {
-                    rb.isKinematic = true;
-                }
-            }
-
-            SetTrailEnabled(true);
         }
         
         public void Init(int entityId, EcsWorld world)
@@ -152,6 +147,54 @@ namespace ECS.Bridges
             CreateHitbox();
         }
         
+        public void Reset()
+        {
+            _t.localScale = Vector3.one * scale;
+            
+            _lifeTimer = 0f;
+            _penetrationCount = 0;
+            _aimTarget = Vector3.zero;
+
+            SyncEcsState();
+            gameObject.SetActive(true);
+            
+            var tiltRot = Quaternion.Euler(tilt, 0f, 0f);
+            var rot = _t.rotation * tiltRot;
+            _t.rotation = rot;
+            
+            if (rb != null)
+            {
+                if (enableRigidbody)
+                {
+                    rb.rotation = rot;
+                
+                    rb.isKinematic = false;
+                    rb.linearVelocity = Vector3.zero;
+                    rb.angularVelocity = Vector3.zero;
+                
+                    rb.AddForce(_t.forward * speed, ForceMode.Impulse);
+                    rb.AddRelativeTorque(Vector3.right * rbTorque, ForceMode.Force);
+                }
+                else
+                {
+                    rb.isKinematic = true;
+                }
+            }
+            
+            if (_collider != null)
+            {
+                _collider.enabled = hitboxEnableDelay == 0f;
+            }
+            
+            if (particle != null)
+            {
+                var main = particle.main;
+                main.startLifetime = lifetime;
+            }
+
+            SetTrailEnabled(true);
+        }
+        
         public void SetTag(GlobalTag globalTag)
         {
             this.globalTag = globalTag;
@@ -167,24 +210,28 @@ namespace ECS.Bridges
             damage = cfg.damage;
             speed = cfg.speed;
             lifetime = cfg.lifetime;
+            knockbackForce = cfg.knockbackForce;
+            knockbackDuration = cfg.knockbackDuration;
             penetrationCount = cfg.penetrationCount;
             hitboxEnableDelay = cfg.hitboxEnableDelay;
 
+            enableAim = cfg.enableAim;
+            canReuseTarget = cfg.canReuseTarget;
+            aimDot = cfg.aimDot;
+            aimRange = cfg.aimRange;
+            aimSpeed = cfg.aimSpeed;
+            aimDelay = cfg.aimDelay;
+            aimMoveSpeedMult = cfg.aimMoveSpeedMult;
+            
             enableRigidbody = cfg.enableRigidbody;
             rbHitObstacles = cfg.rbHitObstacles;
-            rbTilt = cfg.rbTilt;
+            tilt = cfg.tilt;
             rbTorque = cfg.rbTorque;
             
             pushForce = cfg.pushForce;
             pushUpwardsMod = cfg.pushUpwardsMod;
-
-            explosionConfig = cfg.explosionConfig;
             
-            if (particle != null)
-            {
-                var main = particle.main;
-                main.startLifetime = lifetime;
-            }
+            explosionConfig = cfg.explosionConfig;
         }
 
         public bool CheckNeedsDestroy()
@@ -196,24 +243,99 @@ namespace ECS.Bridges
         {
             if (hitboxEnableDelay > 0f)
             {
-                if (Hitbox != null)
+                if (_hitbox != null)
                 {
-                    Hitbox.enabled = _lifeTimer >= hitboxEnableDelay;
+                    _hitbox.enabled = _lifeTimer >= hitboxEnableDelay;
                 }
-
+        
                 if (_collider != null)
                 {
                     _collider.enabled = _lifeTimer >= hitboxEnableDelay;
                 }
             }
+    
+            var currentSpeed = speed;
             
-            // transform update if no rb
+            // aim-related code (non-rb only)
+            if (enableAim && _aimTarget != Vector3.zero)
+            {
+                var isAimActive = _lifeTimer > aimDelay;
+                if (isAimActive)
+                {
+                    currentSpeed *= aimMoveSpeedMult;
+            
+                    if (!enableRigidbody || rb == null)
+                    {
+                        var targetDir = (_aimTarget - _t.position).normalized;
+                        var step = aimSpeed * dt;
+                        
+                        var currentRot = _t.rotation;
+                        var targetRot = Quaternion.LookRotation(targetDir);
+                        _t.rotation = Quaternion.Slerp(currentRot, targetRot, step);
+                    }
+
+                    if (trail != null && !trail.emitting)
+                    {
+                        trail.emitting = true;
+                    }
+                }
+            }
+
             if (!enableRigidbody || rb == null)
             {
-                _t.Translate(_t.forward * speed * dt, Space.World);
+                _t.Translate(_t.forward * currentSpeed * dt, Space.World);
             }
-            
+    
             _lifeTimer += dt;
+            SyncEcsState();
+        }
+
+        public void FixedTick(float dt)
+        {
+            if (!enableAim || _aimTarget == Vector3.zero) return;
+            if (!enableRigidbody || rb == null) return;
+            if (_lifeTimer <= aimDelay) return;
+            
+            var targetDir = (_aimTarget - _t.position).normalized;
+            var step = aimSpeed * dt;
+            
+            var currentRot = rb.rotation;
+            var targetRot = Quaternion.LookRotation(targetDir);
+            rb.rotation = Quaternion.Slerp(currentRot, targetRot, step);
+
+            rb.linearVelocity = _t.forward * (speed * aimMoveSpeedMult);
+            rb.angularVelocity = Vector3.zero;
+        }
+
+        private void SyncEcsState()
+        {
+            if (EcsUtils.HasCompInPool<ProjectileComponent>(World, EntityId, out var projectilePool))
+            {
+                ref var aProjectile = ref projectilePool.Get(EntityId);
+                
+                aProjectile.Bridge = this;
+                aProjectile.Tag = globalTag;
+                aProjectile.HitBox = _hitbox;
+                
+                aProjectile.CanHitOnCooldown = canHitOnCooldown;
+                aProjectile.IgnoreHitFx = ignoreHitFx;
+
+                aProjectile.Scale = scale;
+                aProjectile.Damage = damage;
+                aProjectile.KnockbackForce = knockbackForce;
+                aProjectile.KnockbackDuration = knockbackDuration;
+                
+                aProjectile.EnableAim = enableAim;
+                aProjectile.CanReuseTarget = canReuseTarget;
+                aProjectile.AimDot = aimDot;
+                aProjectile.AimRange = aimRange;
+                
+                aProjectile.PushForce = pushForce;
+                aProjectile.PushUpwardsMod = pushUpwardsMod;
+
+                // in this case, the AimTarget are being set in ProjectileSystem
+                _aimTarget = aProjectile.AimTarget;
+            }
         }
 
         public void RegisterHit()
@@ -229,10 +351,10 @@ namespace ECS.Bridges
         
         public bool CheckCollisionWithObstacles()
         {
-            if (rb != null)
+            if (rb != null && enableRigidbody)
             {
-                var radius = Mathf.Max(Hitbox.size.x, Hitbox.size.y, Hitbox.size.z) * scale;
-                var center = Hitbox.bounds.center;
+                var radius = Mathf.Max(_hitbox.size.x, _hitbox.size.y, _hitbox.size.z) * scale;
+                var center = _hitbox.bounds.center;
                 var hits = Physics.OverlapSphereNonAlloc(center, radius, _hits, obstacleLayerMask);
 
                 // disable trail on hit
@@ -250,7 +372,7 @@ namespace ECS.Bridges
         
         private void CreateHitbox()
         {
-            if (Hitbox != null) return;
+            if (_hitbox != null) return;
             if (hitboxParent == null) return;
             
             var go = new GameObject("Hitbox")
@@ -262,11 +384,11 @@ namespace ECS.Bridges
             go.transform.localRotation = Quaternion.Euler(hitboxRotation);
             go.transform.localPosition = Vector3.zero;
             
-            Hitbox = go.AddComponent<BoxCollider>();
+            _hitbox = go.AddComponent<BoxCollider>();
             
-            Hitbox.isTrigger = true;
-            Hitbox.size = hitboxSize;
-            Hitbox.center = hitboxOffset;
+            _hitbox.isTrigger = true;
+            _hitbox.size = hitboxSize;
+            _hitbox.center = hitboxOffset;
         }
 
         private void SetTrailEnabled(bool state, bool clear = false)
@@ -278,6 +400,11 @@ namespace ECS.Bridges
             {
                 trail.Clear();
             }
+        }
+
+        public void SetHomingTarget(Vector3 target)
+        {
+            _aimTarget = target;
         }
     }
 }

@@ -93,8 +93,6 @@ namespace Actor
             // add component to pool
             var aimerPool = World.GetPool<AimerComponent>();
             aimerPool.Add(EntityId);
-            
-            SyncEcsState();
         }
 
         public void Reset()

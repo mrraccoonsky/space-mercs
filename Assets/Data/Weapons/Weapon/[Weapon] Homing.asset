@@ -10,41 +10,41 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 2334bbdca7be45188d1163a2a40d4d04, type: 3}
-  m_Name: '[Weapon] Launcher'
+  m_Name: '[Weapon] Homing'
   m_EditorClassIdentifier: Assembly-CSharp::Data.Weapon.WeaponConfig
   enableFriendlyFire: 0
-  canHitOnCooldown: 1
+  canHitOnCooldown: 0
   ignoreHitFx: 0
-  attackCooldown: 1.4
-  projectileCount: 1
-  projectileCooldown: 0
+  attackCooldown: 2
+  projectileCount: 3
+  projectileCooldown: 0.02
   burstCount: 2
-  burstCooldown: 0.3
-  holdBurstTransform: 0
-  scatterAngle: 3
-  scatterType: 1
-  originCycleMode: 0
-  switchAfterEachShot: 0
-  projectilePrefab: {fileID: 3905571746805792301, guid: d20658a0593603f4ca121dbc6bbf5b9b, type: 3}
-  tilt: -20
+  burstCooldown: 0.5
+  holdBurstTransform: 1
+  scatterAngle: 45
+  scatterType: 2
+  originCycleMode: 2
+  switchAfterEachShot: 1
+  projectilePrefab: {fileID: 3905571746805792301, guid: 9fd9419b3882a1e4ebadd6e2265dc93d, type: 3}
+  tilt: 0
   scale: 1
-  damage: 5
-  speed: 8
-  lifetime: 1.5
-  knockbackForce: 5
-  knockbackDuration: 0.2
+  damage: 10
+  speed: 6
+  lifetime: 5
+  knockbackForce: 10
+  knockbackDuration: 0.04
   penetrationCount: 0
   hitboxEnableDelay: 0
-  enableAim: 0
-  canReuseTarget: 0
-  aimDot: 0.1
-  aimRange: 10
-  aimSpeed: 5
-  aimDelay: 0.2
-  aimMoveSpeedMult: 1
-  enableRigidbody: 1
+  enableAim: 1
+  canReuseTarget: 1
+  aimDot: 0.7
+  aimRange: 5
+  aimSpeed: 20
+  aimDelay: 0.3
+  aimMoveSpeedMult: 2.5
+  enableRigidbody: 0
   rbHitObstacles: 1
   rbTorque: 0.4
-  pushForce: 50
-  pushUpwardsMod: 10
+  pushForce: 55
+  pushUpwardsMod: 15
   explosionConfig: {fileID: 11400000, guid: b4c85033ffac39047ae2a0111773e0b5, type: 2}

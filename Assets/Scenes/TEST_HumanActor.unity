@@ -4026,7 +4026,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ECS.Bridges.SpawnerArea
   prefabsPerSpawn: 1
   totalSpawnedCount: -1
-  spawnLimit: 10
+  spawnLimit: 15
   spawnInterval: 0.1
   prefabs:
   - {fileID: 4385028482072812535, guid: 64839bde76670ae4580a12189da184b5, type: 3}
@@ -4084,7 +4084,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c245258ff43dd8a4f9838cc7a2564c0d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Core.Bootstrap
-  consoleVerbosity: 2
+  consoleVerbosity: 1
 --- !u!1 &1268333132
 GameObject:
   m_ObjectHideFlags: 0
@@ -4233,7 +4233,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1268333132}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1ab987674bc7d154192a5a5c442ed5e7, type: 3}
   m_Name: 

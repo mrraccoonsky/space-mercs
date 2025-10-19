@@ -30,22 +30,13 @@ namespace DI.Services
             if (bridge == null) return null;
             
             var entityId = _world.NewEntity();
-            var projectilePool = _world.GetPool<ProjectileComponent>();
-            
-            ref var aProjectile = ref projectilePool.Add(entityId);
             var globalTag = cfg.enableFriendlyFire ? GlobalTag.Default : tag;
             
-            aProjectile.Bridge = bridge;
-            aProjectile.Tag = globalTag;
-            aProjectile.HitEntities = HashSetPool.Get();
+            var projectilePool = _world.GetPool<ProjectileComponent>();
+            ref var aProjectile = ref projectilePool.Add(entityId);
             
-            aProjectile.CanHitOnCooldown = cfg.canHitOnCooldown;
-            aProjectile.IgnoreHitFx = cfg.ignoreHitFx;
-
-            aProjectile.Scale = cfg.scale;
-            aProjectile.Damage = cfg.damage;
-            aProjectile.PushForce = cfg.pushForce; 
-            aProjectile.PushUpwardsMod = cfg.pushUpwardsMod;
+            // can't really access hit entities pool from bridge, so we do it here
+            aProjectile.HitEntities = HashSetPool.Get();
             
             bridge.Init(entityId, _world);
             bridge.SetTag(globalTag);
@@ -72,21 +63,8 @@ namespace DI.Services
             ref var aExplosion = ref explosionPool.Add(entityId);
             var globalTag = cfg.enableFriendlyFire ? GlobalTag.Default : tag;
             
-            aExplosion.Bridge = bridge;
-            aExplosion.Tag = globalTag;
+            // can't really access hit entities pool from bridge, so we do it here
             aExplosion.HitEntities = HashSetPool.Get();
-            
-            aExplosion.CanHitOnCooldown = cfg.canHitOnCooldown;
-            aExplosion.IgnoreHitFx = cfg.ignoreHitFx;
-            aExplosion.DistanceMult = cfg.distanceMult;
-            
-            // those values can be modded in ProjectileSystem if
-            // cfg.clone*** are true
-            aExplosion.Scale = cfg.scale;
-            aExplosion.Damage = cfg.damage;
-            aExplosion.Radius = cfg.scaleAffectsRadius ? cfg.scale * cfg.radius : cfg.radius;
-            aExplosion.PushForce = cfg.pushForce;
-            aExplosion.PushUpwardsMod = cfg.pushUpwardsMod;
             
             bridge.Init(entityId, _world);
             bridge.SetTag(globalTag);

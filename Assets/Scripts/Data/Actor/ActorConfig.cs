@@ -14,6 +14,7 @@ namespace Data.Actor
         
         // aMover
         [BoxGroup("Movement")] public float speed = 5f;
+        [BoxGroup("Movement")] public bool canBeKnockedBack = true;
 
         [BoxGroup("Jump")] public float jumpHeight = 1.5f;
         [BoxGroup("Jump")] public float jumpDelay = 0.1f;

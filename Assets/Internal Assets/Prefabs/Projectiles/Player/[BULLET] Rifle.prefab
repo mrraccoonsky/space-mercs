@@ -63,17 +63,26 @@ MonoBehaviour:
   canHitOnCooldown: 0
   ignoreHitFx: 0
   scale: 0
+  tilt: 0
   damage: 0
   speed: 0
   lifetime: 0
+  knockbackForce: 0
+  knockbackDuration: 0
   penetrationCount: 0
   hitboxEnableDelay: 0
-  pushForce: 0
-  pushUpwardsMod: 0
+  enableAim: 0
+  canReuseTarget: 0
+  aimDot: 0
+  aimRange: 0
+  aimSpeed: 0
+  aimDelay: 0
+  aimMoveSpeedMult: 0
   enableRigidbody: 0
   rbHitObstacles: 0
-  rbTilt: 0
   rbTorque: 0
+  pushForce: 0
+  pushUpwardsMod: 0
   explosionConfig: {fileID: 0}
 --- !u!1 &3922395652910652227
 GameObject:

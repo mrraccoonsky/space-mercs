@@ -15,6 +15,7 @@ MonoBehaviour:
   maxHealth: 50
   hitCooldown: 0.5
   speed: 3
+  canBeKnockedBack: 1
   jumpHeight: 1.5
   jumpDelay: 0.1
   jumpCooldown: 0.1

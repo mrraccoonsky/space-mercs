@@ -10,6 +10,11 @@ namespace ECS.Bridges
         public EcsWorld World { get; }
         void Init(int entityId, EcsWorld world);
         void Tick(float dt);
+
+        void FixedTick(float dt)
+        {
+            // optional method that can be implemented by bridges that need to know the fixed delta time
+        }
         
         void SetTag(GlobalTag globalTag)
         {

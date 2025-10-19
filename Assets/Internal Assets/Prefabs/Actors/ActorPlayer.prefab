@@ -4856,6 +4856,7 @@ MonoBehaviour:
   groundCheckRadius: 0.5
   groundSampleCount: 0
   speed: 0
+  canBeKnockedBack: 0
   jumpHeight: 0
   jumpDelay: 0
   jumpCooldown: 0
@@ -4936,6 +4937,8 @@ MonoBehaviour:
   deadTimer: -1
   lastHitPos: {x: 0, y: 0, z: 0}
   lastHitDir: {x: 0, y: 0, z: 0}
+  lastHitKnockbackForce: 0
+  lastHitKnockbackDuration: 0
   lastHitPushForce: 0
   lastHitPushUpwardsMod: 0
   lastHitIgnoreFx: 0

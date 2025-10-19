@@ -45,9 +45,11 @@ namespace ECS.Systems
         public void Run(IEcsSystems systems)
         {
             _entitiesToDestroy.Clear();
-            
-            TickExplosions();
-            TickProjectiles();
+
+            var dt = Time.deltaTime;
+            var fdt = Time.fixedDeltaTime;
+            TickProjectiles(dt, fdt);
+            TickExplosions(dt);
             
             foreach (var entity in _entitiesToDestroy)
             {
@@ -55,102 +57,142 @@ namespace ECS.Systems
             }
         }
 
-        private void TickProjectiles()
+        private void TickProjectiles(float dt, float fdt)
         {
-            foreach (var e in _projectilesFilter)
+            foreach (var entityId in _projectilesFilter)
             {
-                ref var aProjectile = ref _projectilePool.Get(e);
-                var bridge = aProjectile.Bridge;
+                ref var aProjectile = ref _projectilePool.Get(entityId);
+                var pBridge = aProjectile.Bridge;
 
-                if (bridge == null) continue;
-                if (bridge.CheckNeedsDestroy())
+                if (pBridge == null) continue;
+                if (pBridge.CheckNeedsDestroy())
                 {
-                    DestroyProjectile(bridge, e);
+                    DestroyProjectile(pBridge, entityId);
                     continue;
                 }
                 
-                bridge.Tick(Time.deltaTime);
+                pBridge.Tick(dt);
+                pBridge.FixedTick(fdt);
                 
-                if (bridge.Hitbox == null || !bridge.Hitbox.enabled) continue;
+                // collision check
+                var hitbox = aProjectile.HitBox;
+                if (hitbox == null || !hitbox.enabled) continue;
+                var pBounds = hitbox.bounds;
                 
-                var pBounds = bridge.Hitbox.bounds;
+                // homing-related values
+                var curTarget = Vector3.zero;
+                var minDistance = aProjectile.AimRange;
                 
                 foreach (var targetEntity in _targetFilter)
                 {
                     if (aProjectile.HitEntities.Contains(targetEntity)) continue;
-                    
+
                     ref var aHealth = ref _healthPool.Get(targetEntity);
                     if (aHealth.IsDead) continue;
-                    
                     if (aHealth.Tag == aProjectile.Tag) continue;
-                    if (aHealth.IsOnCooldown && !aProjectile.CanHitOnCooldown) continue;
-                    
                     if (aHealth.HitBox == null) continue;
+                    
+                    if (aProjectile.EnableAim)
+                    {
+                        var hCenter = aHealth.HitBox.bounds.center;
+
+                        if (aProjectile.AimTarget != Vector3.zero)
+                        {
+                            var distance = (hCenter - aProjectile.AimTarget).magnitude;
+                            if (distance < 0.1f)
+                            {
+                                curTarget = hCenter;
+                            }
+                        }
+                        else
+                        {
+                            var targetPass = CheckAimTargetPass(entityId, aProjectile, hCenter);
+
+                            var currentDir = pBridge.transform.forward;
+                            var targetDir = (hCenter - pBounds.center).normalized;
+                            var dot = Vector3.Dot(currentDir, targetDir);
+                            var dotPass = dot > aProjectile.AimDot;
+                        
+                            var distance = (hCenter - pBounds.center).magnitude;
+                            var distancePass = distance < minDistance;
+                            if (targetPass && dotPass && distancePass)
+                            {
+                                minDistance = distance;
+                                curTarget = hCenter;
+                            }
+                        }
+                    }
+                    
+                    if (aHealth.IsOnCooldown && !aProjectile.CanHitOnCooldown) continue;
                     if (aHealth.HitBox.bounds.Intersects(pBounds))
                     {
                         HandleHitboxIntersect(ref aProjectile, ref aHealth);
                         
-                        bridge.RegisterHit();
+                        pBridge.RegisterHit();
                         aProjectile.HitEntities.Add(targetEntity);
                         break;
                     }
                 }
-
-                if (_entitiesToDestroy.Contains(e)) continue;
-
-                if (bridge.CheckCollisionWithObstacles())
+                    
+                aProjectile.AimTarget = curTarget;
+                
+                // early exit if projectile is already marked for destroy
+                if (_entitiesToDestroy.Contains(entityId)) continue;
+                
+                if (pBridge.CheckCollisionWithObstacles())
                 {
-                    bridge.RegisterHit();
-                    DestroyProjectile(bridge, e);
+                    pBridge.RegisterHit();
+                    DestroyProjectile(pBridge, entityId);
                 }
             }
         }
-
-        private void TickExplosions()
+        
+        private void TickExplosions(float dt)
         {
-            foreach (var e in _explosionsFilter)
+            foreach (var entityId in _explosionsFilter)
             {
-                ref var aExplosion = ref _explosionPool.Get(e);
-                var bridge = aExplosion.Bridge;
+                ref var aExplosion = ref _explosionPool.Get(entityId);
+                var eBridge = aExplosion.Bridge;
 
-                if (bridge == null) continue;
-                if (bridge.CheckNeedsDestroy())
+                if (eBridge == null) continue;
+                if (eBridge.CheckNeedsDestroy())
                 {
-                    DestroyExplosion(bridge, e);
+                    DestroyExplosion(eBridge, entityId);
                     continue;
                 }
                 
-                bridge.Tick(Time.deltaTime);
+                eBridge.Tick(dt);
+
+                var hitArea = aExplosion.HitArea;
+                if (hitArea == null || !hitArea.enabled) continue;
+                var eCenter = hitArea.bounds.center;
                 
-                if (bridge.HitArea == null || !bridge.HitArea.enabled) continue;
-                
-                var pCenter = bridge.HitArea.bounds.center;
                 foreach (var targetEntity in _targetFilter)
                 {
                     if (aExplosion.HitEntities.Contains(targetEntity)) continue;
                     
                     ref var aHealth = ref _healthPool.Get(targetEntity);
                     if (aHealth.IsDead) continue;
-                    
                     if (aHealth.Tag == aExplosion.Tag) continue;
-                    if (aHealth.IsOnCooldown && !aExplosion.CanHitOnCooldown) continue;
                     
+                    if (aHealth.IsOnCooldown && !aExplosion.CanHitOnCooldown) continue;
                     if (aHealth.HitBox == null) continue;
                     
                     var hBounds = aHealth.HitBox.bounds;
                     var hCenter = hBounds.center;
-                    var distance = (hCenter - pCenter).magnitude;
+                    var distance = (hCenter - eCenter).magnitude;
 
                     if (distance <= aExplosion.Radius)
                     {
                         HandleHitAreaIntersect(ref aExplosion, ref aHealth, distance);
+                        
                         aExplosion.HitEntities.Add(targetEntity);
                         break;
                     }
                 }
             }
         }
-
+        
         private void DestroyProjectile(ProjectileBridge bridge, int entityId)
         {
             if (bridge.ExplosionConfig != null)
@@ -167,72 +209,6 @@ namespace ECS.Systems
             _entitiesToDestroy.Add(entityId);
         }
         
-        private ExplosionBridge SpawnExplosion(ExplosionConfig cfg, GlobalTag tag, Vector3 pos, int projectileEntityId = -1)
-        {
-            if (cfg == null) return null;
-            
-            var eBridge = _projectileService.SpawnExplosion(cfg, tag, pos);
-            if (eBridge == null) return null;
-            
-            var explosionPool = _world.GetPool<ExplosionComponent>();
-            ref var aExplosion = ref explosionPool.Get(eBridge.EntityId);
-            
-            // clone necessary values if necessary
-            if (projectileEntityId != -1 && EcsUtils.HasCompInPool<ProjectileComponent>(_world, projectileEntityId, out var projectilePool))
-            {
-                ref var aProjectile = ref projectilePool.Get(projectileEntityId);
-                
-                // copy projectile hit entities to new explosion
-                foreach (var e in aProjectile.HitEntities)
-                {
-                    aExplosion.HitEntities.Add(e);
-                    // DebCon.Log($"Cloned hit entities from projectile with id {projectileEntityId} => {eBridge.gameObject.name}", "ProjectileSystem", eBridge.gameObject);
-                }
-                
-                var needsUpdate = false;
-                
-                if (cfg.cloneScale)
-                {
-                    var scale = aProjectile.Scale;
-                    aExplosion.Scale = scale;
-
-                    var radius = cfg.scaleAffectsRadius ? scale * cfg.radius : cfg.radius;
-                    aExplosion.Radius = radius;
-                    
-                    needsUpdate = true;
-                    // DebCon.Log($"Cloned SCALE from projectile with id {projectileEntityId} => {eBridge.gameObject.name}", "ProjectileSystem", eBridge.gameObject);
-                }
-                
-                if (cfg.cloneDamage)
-                {
-                    var damage = aProjectile.Damage;
-                    aExplosion.Damage = damage;
-
-                    needsUpdate = true;
-                    // DebCon.Log($"Cloned DAMAGE from projectile with id {projectileEntityId} => {eBridge.gameObject.name}", "ProjectileSystem", eBridge.gameObject);
-                }
-
-                if (cfg.clonePush)
-                {
-                    var pushForce = aProjectile.PushForce;
-                    aExplosion.PushForce = pushForce;
-
-                    var pushUpwardsMod = aProjectile.PushUpwardsMod;
-                    aExplosion.PushUpwardsMod = pushUpwardsMod;
-
-                    needsUpdate = true;
-                    // DebCon.Log($"Cloned PUSH VALUES from projectile with id {projectileEntityId} => {eBridge.gameObject.name}", "ProjectileSystem", eBridge.gameObject);
-                }
-
-                if (needsUpdate)
-                {
-                    eBridge.TryUpdateFromEcsComponent();
-                }
-            }
-            
-            return eBridge;
-        }
-        
         private void DestroyExplosion(ExplosionBridge bridge, int entityId)
         {
             bridge.gameObject.SetActive(false);
@@ -240,37 +216,131 @@ namespace ECS.Systems
             _entitiesToDestroy.Add(entityId);
         }
         
+        private void SpawnExplosion(ExplosionConfig cfg, GlobalTag tag, Vector3 pos, int projectileEntityId = -1)
+        {
+            if (cfg == null) return;
+            
+            var eBridge = _projectileService.SpawnExplosion(cfg, tag, pos);
+            if (eBridge == null) return;
+            
+            var explosionPool = _world.GetPool<ExplosionComponent>();
+            ref var aExplosion = ref explosionPool.Get(eBridge.EntityId);
+            
+            // clone necessary values if necessary
+            if (projectileEntityId == -1) return;
+            if (!EcsUtils.HasCompInPool<ProjectileComponent>(_world, projectileEntityId, out var projectilePool)) return;
+            
+            ref var aProjectile = ref projectilePool.Get(projectileEntityId);
+            
+            // copy projectile hit entities to new explosion to avoid double hits
+            foreach (var e in aProjectile.HitEntities)
+            {
+                aExplosion.HitEntities.Add(e);
+            }
+
+            // force pass data to bridge if we are cloning something from projectile
+            if (TryCloneProjectileData(cfg, ref aExplosion, ref aProjectile))
+            {
+                eBridge.ForceUpdateFromComponent();
+            }
+        }
+        
+        private bool TryCloneProjectileData(ExplosionConfig cfg, ref ExplosionComponent aExplosion, ref ProjectileComponent aProjectile)
+        {
+            // clone scale-radius
+            if (cfg.cloneScale)
+            {
+                aExplosion.Scale = aProjectile.Scale;
+                aExplosion.Radius = cfg.scaleAffectsRadius ? aProjectile.Scale * cfg.radius : cfg.radius;;
+            }
+                
+            // clone damage
+            if (cfg.cloneDamage)
+            {
+                aExplosion.Damage = aProjectile.Damage;
+            }
+            
+            // clone knockback
+            if (cfg.cloneKnockback)
+            {
+                aExplosion.KnockbackForce = aProjectile.KnockbackForce;
+                aExplosion.KnockbackDuration = aProjectile.KnockbackDuration;
+            }
+
+            // clone ragdoll-related forces
+            if (cfg.clonePush)
+            {
+                aExplosion.PushForce = aProjectile.PushForce;
+                aExplosion.PushUpwardsMod = aProjectile.PushUpwardsMod;
+            }
+
+            return cfg.cloneScale || cfg.cloneDamage || cfg.cloneKnockback || cfg.clonePush;
+        }
+        
+        private bool CheckAimTargetPass(int entityId, ProjectileComponent aProjectile, Vector3 targetPos)
+        {
+            if (aProjectile.CanReuseTarget) return true; // skip if can reuse target that are taken by other projectiles
+            
+            foreach (var eId in _projectilesFilter)
+            {
+                if (eId == entityId) continue; // skip self
+                                
+                ref var pProjectile = ref _projectilePool.Get(eId);
+                if (!pProjectile.EnableAim) continue; // skip non-aiming projectiles
+                    
+                var distance = (pProjectile.AimTarget - targetPos).magnitude;
+                if (distance > 0.1f) continue; // skip projectiles that are not targeting the same target
+
+                return false;
+            }
+
+            return true;
+        }
+        
         private void HandleHitboxIntersect(ref ProjectileComponent aProjectile, ref HealthComponent aHealth)
         {
-            var pCenter = aProjectile.Bridge.Hitbox.bounds.center;
+            var pCenter = aProjectile.HitBox.bounds.center;
             var hCenter = aHealth.HitBox.bounds.center;
-            // var closestPoint = aHealth.HitBox.ClosestPointOnBounds(pCenter);
             
-            var hitDir = (hCenter - pCenter).normalized;
-            var force = aProjectile.PushForce;
-            var upwardsMod = aProjectile.PushUpwardsMod;
-            var ignoreHitFix = aProjectile.IgnoreHitFx;
+            var hitData = new HitData
+            {
+                Pos = aHealth.HitBox.ClosestPointOnBounds(pCenter),
+                Dir = (hCenter - pCenter).normalized,
+                IgnoreFx = aProjectile.IgnoreHitFx,
+                KnockbackForce = aProjectile.KnockbackForce,
+                KnockbackDuration = aProjectile.KnockbackDuration,
+                PushForce = aProjectile.PushForce,
+                PushUpwardsMod = aProjectile.PushUpwardsMod
+            };
             
-            aHealth.Module.StoreHitData(pCenter, hitDir, force, upwardsMod, ignoreHitFix);
+            aHealth.Module.StoreHitData(ref hitData);
             aHealth.Module.ChangeHealth(-aProjectile.Damage);
         }
 
         private void HandleHitAreaIntersect(ref ExplosionComponent aExplosion, ref HealthComponent aHealth, float distance)
         {
-            var eCenter = aExplosion.Bridge.HitArea.bounds.center;
+            var eCenter = aExplosion.HitArea.bounds.center;
+            var eRadius = aExplosion.HitArea.radius;
             var hCenter = aHealth.HitBox.bounds.center;
-            var radius = aExplosion.Bridge.HitArea.radius;
-            // var closestPoint = aHealth.HitBox.ClosestPointOnBounds(eCenter);
             
-            var hitDir = (hCenter - eCenter).normalized;
-            var force = aExplosion.PushForce;
-            var upwardsMod = aExplosion.PushUpwardsMod;
-            var ignoreHitFix = aExplosion.IgnoreHitFx;
+            // todo: make those calculations optional based on cfg flag
+            var distanceMult = distance / eRadius * aExplosion.DistanceMult;
+            distanceMult = Mathf.Round(distanceMult * 100f) / 100f;
+            
+            var hitData = new HitData
+            {
+                Pos = aHealth.HitBox.ClosestPointOnBounds(eCenter),
+                Dir = (hCenter - eCenter).normalized,
+                IgnoreFx = aExplosion.IgnoreHitFx,
+                KnockbackForce = aExplosion.KnockbackForce * distanceMult,
+                KnockbackDuration = aExplosion.KnockbackDuration,
+                PushForce = aExplosion.PushForce * distanceMult,
+                PushUpwardsMod = aExplosion.PushUpwardsMod * distanceMult
+            };
 
-            var damageMult = distance / radius * aExplosion.DistanceMult;
-            var calcDamage = Mathf.Round(aExplosion.Damage * damageMult);
+            var calcDamage = aExplosion.Damage * distanceMult;
             
-            aHealth.Module.StoreHitData(eCenter, hitDir, force, upwardsMod, ignoreHitFix);
+            aHealth.Module.StoreHitData(ref hitData);
             aHealth.Module.ChangeHealth(-calcDamage);
         }
     }

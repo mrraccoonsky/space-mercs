@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using UnityEngine;
 using Data;
 
 namespace ECS.Components
@@ -9,7 +10,8 @@ namespace ECS.Components
     {
         public ProjectileBridge Bridge;
         public GlobalTag Tag;
-        
+
+        public BoxCollider HitBox;
         public HashSet<int> HitEntities;
         
         public bool CanHitOnCooldown;
@@ -17,6 +19,15 @@ namespace ECS.Components
 
         public float Scale;
         public float Damage;
+        
+        public float KnockbackForce;
+        public float KnockbackDuration;
+
+        public bool EnableAim;
+        public bool CanReuseTarget;
+        public float AimDot;
+        public float AimRange;
+        public Vector3 AimTarget;
         
         public float PushForce;
         public float PushUpwardsMod;

@@ -48,6 +48,10 @@ namespace Data.Weapon
         [BoxGroup("Projectile")] public float lifetime = 1f;
         
         [Space]
+        [BoxGroup("Projectile")] public float acceleration;
+        [BoxGroup("Projectile")] public float accelerationDelay;
+        
+        [Space]
         [BoxGroup("Projectile")] public float knockbackForce;
         [BoxGroup("Projectile")] public float knockbackDuration;
         

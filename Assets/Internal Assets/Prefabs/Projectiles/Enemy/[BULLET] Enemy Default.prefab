@@ -46,6 +46,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 12f66dec1d78466eaa1342df6ad59662, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ECS.Bridges.ProjectileBridge
+  rb: {fileID: 0}
+  trail: {fileID: 0}
   obstacleLayerMask:
     serializedVersion: 2
     m_Bits: 192
@@ -54,14 +56,36 @@ MonoBehaviour:
   hitboxRotation: {x: 0, y: 0, z: 0}
   hitboxSize: {x: 0.25, y: 0.2, z: 0.25}
   particle: {fileID: 1117015574583468431}
-  hitParticlePrefab: {fileID: 3936074708628659913, guid: fc946521398e9cf48b5f56d8fcf4d290, type: 3}
+  hitFxPrefab: {fileID: 0}
+  scaleAffectsHitFx: 0
+  globalTag: 0
+  enableFriendlyFire: 0
+  canHitOnCooldown: 0
   ignoreHitFx: 0
+  scale: 0
+  tilt: 0
+  damage: 0
   speed: 0
   lifetime: 0
+  acceleration: 0
+  accelerationDelay: 0
+  knockbackForce: 0
+  knockbackDuration: 0
   penetrationCount: 0
-  damage: 0
-  force: 0
-  upwardsMod: 0
+  hitboxEnableDelay: 0
+  enableAim: 0
+  canReuseTarget: 0
+  aimDot: 0
+  aimRange: 0
+  aimSpeed: 0
+  aimDelay: 0
+  aimMoveSpeedMult: 0
+  enableRigidbody: 0
+  rbHitObstacles: 0
+  rbTorque: 0
+  pushForce: 0
+  pushUpwardsMod: 0
+  explosionConfig: {fileID: 0}
 --- !u!1 &3922395652910652227
 GameObject:
   m_ObjectHideFlags: 0

@@ -42,6 +42,8 @@ namespace ECS.Bridges
         [ReadOnly, SerializeField] private float damage;
         [ReadOnly, SerializeField] private float speed;
         [ReadOnly, SerializeField] private float lifetime;
+        [ReadOnly, SerializeField] private float acceleration;
+        [ReadOnly, SerializeField] private float accelerationDelay;
         [ReadOnly, SerializeField] private float knockbackForce;
         [ReadOnly, SerializeField] private float knockbackDuration;
         [ReadOnly, SerializeField] private int penetrationCount;
@@ -74,6 +76,7 @@ namespace ECS.Bridges
         private BoxCollider _hitbox;
         private Collider _collider; // only for rb-based projectiles
 
+        private float _currentSpeed;
         private float _lifeTimer;
         private int _penetrationCount;
         private Vector3 _aimTarget;
@@ -150,7 +153,8 @@ namespace ECS.Bridges
         public void Reset()
         {
             _t.localScale = Vector3.one * scale;
-            
+
+            _currentSpeed = speed;
             _lifeTimer = 0f;
             _penetrationCount = 0;
             _aimTarget = Vector3.zero;
@@ -210,6 +214,8 @@ namespace ECS.Bridges
             damage = cfg.damage;
             speed = cfg.speed;
             lifetime = cfg.lifetime;
+            acceleration = cfg.acceleration;
+            accelerationDelay = cfg.accelerationDelay;
             knockbackForce = cfg.knockbackForce;
             knockbackDuration = cfg.knockbackDuration;
             penetrationCount = cfg.penetrationCount;
@@ -253,8 +259,13 @@ namespace ECS.Bridges
                     _collider.enabled = _lifeTimer >= hitboxEnableDelay;
                 }
             }
+            
+            if (_lifeTimer > accelerationDelay)
+            {
+                _currentSpeed += acceleration;
+            }
     
-            var currentSpeed = speed;
+            var currentSpeed = _currentSpeed;
             
             // aim-related code (non-rb only)
             if (enableAim && _aimTarget != Vector3.zero)
@@ -287,6 +298,7 @@ namespace ECS.Bridges
             }
     
             _lifeTimer += dt;
+            
             SyncEcsState();
         }
 

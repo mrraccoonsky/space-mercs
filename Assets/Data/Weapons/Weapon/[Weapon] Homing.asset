@@ -17,31 +17,33 @@ MonoBehaviour:
   ignoreHitFx: 0
   attackCooldown: 2
   projectileCount: 3
-  projectileCooldown: 0.02
+  projectileCooldown: 0.1
   burstCount: 2
   burstCooldown: 0.5
   holdBurstTransform: 1
-  scatterAngle: 45
+  scatterAngle: 30
   scatterType: 2
   originCycleMode: 2
   switchAfterEachShot: 1
   projectilePrefab: {fileID: 3905571746805792301, guid: 9fd9419b3882a1e4ebadd6e2265dc93d, type: 3}
   tilt: 0
   scale: 1
-  damage: 10
+  damage: 15
   speed: 6
   lifetime: 5
+  acceleration: 0.08
+  accelerationDelay: 0.3
   knockbackForce: 10
   knockbackDuration: 0.04
   penetrationCount: 0
   hitboxEnableDelay: 0
   enableAim: 1
-  canReuseTarget: 1
+  canReuseTarget: 0
   aimDot: 0.7
   aimRange: 5
-  aimSpeed: 20
+  aimSpeed: 10
   aimDelay: 0.3
-  aimMoveSpeedMult: 2.5
+  aimMoveSpeedMult: 1.5
   enableRigidbody: 0
   rbHitObstacles: 1
   rbTorque: 0.4

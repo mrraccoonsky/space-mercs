@@ -31,6 +31,8 @@ MonoBehaviour:
   damage: 5
   speed: 8
   lifetime: 0.7
+  acceleration: 0.05
+  accelerationDelay: 0.2
   knockbackForce: 1
   knockbackDuration: 0.08
   penetrationCount: 0

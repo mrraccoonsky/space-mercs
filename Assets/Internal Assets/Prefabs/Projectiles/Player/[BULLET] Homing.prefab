@@ -157,6 +157,8 @@ MonoBehaviour:
   damage: 0
   speed: 0
   lifetime: 0
+  acceleration: 0
+  accelerationDelay: 0
   knockbackForce: 0
   knockbackDuration: 0
   penetrationCount: 0
